@@ -297,26 +297,27 @@ DS$set("public", "flip_scale", function(vars, ...) {
 })
 
 
-DS$set("public", "vars_to_cases", function(index, cols_list, ids = NULL) {
+DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index_values = NULL, index_labels = NULL) {
 	start_time = Sys.time()
 	on.exit(cat("Restruct:", elapsed_fmt(Sys.time() - start_time), "\n"))
 
 	cols_empty = \(df) rowSums(do.call(cbind, df |> map(var_empty))) == length(df)
 
+	cols_list = c(...)
 	all_cols = unlist(cols_list)
 
-	if (length(unique(map_int(cols_list, length))) > 1) stop("All column groups must have the same length.")
+	if (length(unique(lengths(cols_list))) > 1) stop("All column groups must have the same length.")
 	if (!all(all_cols %in% self$variables)) stop("Not all variables are present in the dataframe.")
 
 	base_df = self$data |> select(-all_of(all_cols))
 
-	if (is.null(ids)) ids = seq_along(cols_list[[1]])
+	if (is.null(index_values)) index_values = seq_along(cols_list[[1]])
 
-	self$data = ids |> imap(\(x, i) {
+	self$data = index_values |> imap(\(index_value, i) {
 		group = map_chr(cols_list, i)
 		group_df = self$data |> select(all_of(group))
 		selected_cols = !cols_empty(group_df)
-		base_df = base_df[selected_cols, ] |> mutate(!!index := x)
+		base_df = base_df[selected_cols, ] |> mutate(!!index := index_value)
 		bind_cols(base_df, group_df[selected_cols, ])
 	}) |> list_rbind()
 
@@ -324,6 +325,11 @@ DS$set("public", "vars_to_cases", function(index, cols_list, ids = NULL) {
 		self$set_val_labels({{ var_name }}, self$val_labels[[cols[1]]])
 		self$set_var_label(var_name, self$var_labels[[cols[1]]])
 	})
+
+	if (is.null(index_labels)) index_labels = as.character(index_values)
+	self$set_val_labels(index, index_labels)
+
+	if (!is.null(index_label)) self$var_labels[[index]] = index_label
 })
 
 DS$set("public", "set_multiples", \() self$conv_multiples())

@@ -2,6 +2,7 @@
 
 # add block frames
 
+#' @export
 table_block = function(caption = NULL, vars = NULL, filter_var = NULL, filter_value = NULL) {
 	list(caption = caption, vars = vars, filter_var = filter_var, filter_value = filter_value) |> discard(is.null)
 }
@@ -89,7 +90,7 @@ DS$set("public", "qtable", function(var, weight = NULL) {
 })
 
 
-
+#' @export
 sign_pct = function(n1, p1, n2, p2, sig = 0.05, min_base = 10) {
 	if (n1 <= min_base || n2 <= min_base || p1 == p2) return("")
 	p = (p1 * n1 + p2 * n2) / (n1 + n2)
@@ -99,6 +100,7 @@ sign_pct = function(n1, p1, n2, p2, sig = 0.05, min_base = 10) {
 	if (p2 > p1) "+" else "-"
 }
 
+#' @export
 sign_pct_vec = function(n1, p1, n2, p2, sig = 0.05, min_base = 10) {
 	result = rep("", length(n2))
 
@@ -115,6 +117,7 @@ sign_pct_vec = function(n1, p1, n2, p2, sig = 0.05, min_base = 10) {
 	result
 }
 
+#' @export
 sign_mean = function(n1, p1, sd1, n2, p2, sd2, sig = 0.05, min_base = 10) {
 	if (n1 <= min_base || n2 <= min_base || p1 == p2) return("")
 	s1 = sd1 ^ 2 / n1
@@ -126,6 +129,7 @@ sign_mean = function(n1, p1, sd1, n2, p2, sd2, sig = 0.05, min_base = 10) {
 	if (p2 > p1) "+" else "-"
 }
 
+#' @export
 sign_mean_vec = function(n1, p1, sd1, n2, p2, sd2, sig = 0.05, min_base = 10) {
 	result = rep("", length(n2))
 
@@ -675,6 +679,7 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	)
 }
 
+#' @export
 excel_tables = function(..., filename, no_contents = F, options_format = "num") {
 	start_time = Sys.time()
 	on.exit(cat("Total elapsed time:", elapsed_fmt(Sys.time() - start_time), "\n"))

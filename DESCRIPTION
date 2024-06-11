@@ -1,7 +1,7 @@
 Package: rdp2
 Type: Package
 Title: R Data Processing
-Version: 0.1.0
+Version: 1.0.0
 Author: Kristensen Kor
 Maintainer: Kristensen Kor <kristensen.kor@gmail.com>
 Description: A library for common data processing tasks and table outputs
@@ -9,6 +9,11 @@ Description: A library for common data processing tasks and table outputs
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.3.1
+Imports:
+    dplyr,
+    purrr,
+    haven,
+    openxlsx
 Collate: 
     'rdp2.R'
     'rdp2 tables.R'
