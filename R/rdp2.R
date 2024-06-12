@@ -131,6 +131,7 @@ DS$set("public", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
 DS$set("public", "is_nominal", \(var) var %in% names(self$val_labels))
 
 DS$set("public", "get_col_names", \(...) self$data |> select(...) |> names())
+DS$set("public", "names", \(...) self$data |> select(...) |> names())
 
 # DS$set("public", "get_col_names", \(...) self$data |> select(!!!enquos(...)) |> names())
 # DS$set("public", "get_col_names", \(...) self$data |> select(all_of(!!!enquos(...))) |> names())
