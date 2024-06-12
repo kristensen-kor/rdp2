@@ -16,3 +16,8 @@ devtools::build(".", ".")
 devtools::install(".")
 
 library(rdp2)
+
+
+
+# Use usethis::use_roxygen_md() to set up roxygen2 for documenting functions.
+# Generate vignettes with usethis::use_vignette().
