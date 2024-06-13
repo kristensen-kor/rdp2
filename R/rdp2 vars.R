@@ -193,9 +193,9 @@ DS$set("public", "vdiscard", function(vars, ...) {
 	values = c(...)
 	for (var in self$names({{ vars }})) {
 		if (is_multiple(self$data[[var]])) {
-			self$data[[var]] = ifelse(has(self$data[[var]], values), NA, self$data[[var]])
+			self$data[[var]][has(self$data[[var]], values)] = NA
 		} else {
-			self$data[[var]] = self$data[[var]] |> map(\(x) setdiff(x, values))
+			self$data[[var]] = self$data[[var]] |> map(\(x) x[is.na(match(x, values))])
 		}
 	}
 })
