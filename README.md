@@ -30,3 +30,8 @@ Yes, there was another version - `rdp`. It never made it to the public. It relie
 * `openxlsx` - Used for exporting to Excel.
 * `haven` - Used for importing/exporting SPSS .sav datasets.
 * `R6`
+
+### Contributing
+
+At this time, I am not accepting any pull requests or contributions. The project is still in the very early stages of development, and my vision for it extends beyond what is currently presented on GitHub. As a result, a lot may change, including core functions.
+
