@@ -60,7 +60,8 @@ DS$set("public", "nvn", function(name, label = NULL, labels = NULL, fill = NA, a
 })
 
 DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL, before = NULL) {
-	self$data = self$data |> mutate("{ name }" := map(seq_len(nrow(self$data)), \(x) numeric(0)), .after = {{ after }}, .before = {{ before }})
+	# self$data = self$data |> mutate("{ name }" := map(seq_len(nrow(self$data)), \(x) numeric(0)), .after = {{ after }}, .before = {{ before }})
+	self$data = self$data |> mutate("{ name }" := rep(list(numeric(0)), nrow(self$data)), .after = {{ after }}, .before = {{ before }})
 	if (!is.null(label)) self$var_labels[[name]] = label
 	if (!is.null(labels)) self$set_val_labels({{ name }}, labels)
 })
