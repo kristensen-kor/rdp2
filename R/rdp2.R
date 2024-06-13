@@ -38,8 +38,13 @@ var_empty.default = function(var) is.na(var)
 
 #' @export
 recode_empty = function(...) UseMethod("recode_empty")
+
 #' @export
 recode_empty.list = function(var, value) map(var, \(x) if (length(x) == 0) value else x)
+# replace with var[var_empty(var)] = value
+# replace with var[lengths(var) == 0] = value
+# replace with ifelse(lengths(var) == 0, value, var)
+
 #' @export
 recode_empty.default = function(var, value) replace(var, is.na(var), value)
 

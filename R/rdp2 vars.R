@@ -188,7 +188,15 @@ DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 })
 
 DS$set("public", "vdiscard", function(vars, ...) {
-	self$recode({{ vars }}, as.formula(sprintf("c(%s) ~ NA", paste(c(...), collapse = ", "))))
+	# self$recode({{ vars }}, as.formula(sprintf("c(%s) ~ NA", paste(c(...), collapse = ", "))))
+	values = c(...)
+	for (var in self$names({{ vars }})) {
+		if (is_multiple(self$data[[var]])) {
+			self$data[[var]] = ifelse(has(self$data[[var]], values), NA, self$data[[var]])
+		} else {
+			self$data[[var]] = self$data[[var]] |> map(\(x) setdiff(x, values))
+		}
+	}
 })
 
 DS$set("public", "vstrip", function(vars, ...) {
