@@ -13,11 +13,20 @@ is_multiple = is.list
 paste_vars = function(...) paste(..., sep = "_")
 
 #' @export
-mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
+mrcheck = function(xs) {
+	xs = xs[!is.na(xs)]
+	unique(xs[order(xs)])
+}
+# mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
 
 #' @export
-add_to_mrset = function(var, value) c(var, value) |> mrcheck()
-#optimize: not add NA, not add %in%, not check for add max
+add_to_mrset = function(vec, value) {
+	if (value %in% vec) return(vec)
+	if (value > max(vec, na.rm = TRUE)) return(c(vec, value))
+	c(vec, value) |> mrcheck()
+}
+# add_to_mrset = function(var, value) c(var, value) |> mrcheck()
+
 
 recode = function(...) UseMethod("recode")
 recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
