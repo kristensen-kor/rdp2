@@ -21,6 +21,8 @@ mrcheck = function(xs) {
 
 #' @export
 add_to_mrset = function(vec, value) {
+	if (is.na(value)) return(vec)
+	if (length(vec) == 0) return(value)
 	if (value %in% vec) return(vec)
 	if (value > max(vec, na.rm = TRUE)) return(c(vec, value))
 	c(vec, value) |> mrcheck()
