@@ -17,6 +17,7 @@ mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
 
 #' @export
 add_to_mrset = function(var, value) c(var, value) |> mrcheck()
+#optimize: not add NA, not add %in%, not check for add max
 
 recode = function(...) UseMethod("recode")
 recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
@@ -50,7 +51,7 @@ recode_empty.default = function(var, value) replace(var, is.na(var), value)
 
 
 # apply_to = function(df, cols, f) df |> mutate(across({{ cols }}, f))
-# get_col_names = function(df, ...) df |> select(...) |> names()
+# names = function(df, ...) df |> select(...) |> names()
 # apply_to = function(df, cols, f) df |> mutate(across(get_col_names(df, {{ cols }}), f))
 # apply_to = function(df, cols, f) df |> mutate(across(all_of(df |> select({{ cols }}) |> names()), f))
 # apply_to = function(df, cols, f) {
@@ -129,17 +130,18 @@ DS$set("active", "variables", \() names(self$data))
 
 DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA)
 
-DS$set("public", "get_var_labels", \(...) self$get_col_names(...) |> map_chr(self$get_var_label))
+DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(self$get_var_label))
 
 DS$set("public", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
 
 DS$set("public", "is_nominal", \(var) var %in% names(self$val_labels))
 
-DS$set("public", "get_col_names", \(...) self$data |> select(...) |> names())
-DS$set("public", "names", \(...) self$data |> select(...) |> names())
+DS$set("public", "get_col_names", \(...) {
+	warning("$get_col_names() is deprecated. Please use $names() instead", call. = F)
+	self$data |> select(...) |> names()
+})
 
-# DS$set("public", "get_col_names", \(...) self$data |> select(!!!enquos(...)) |> names())
-# DS$set("public", "get_col_names", \(...) self$data |> select(all_of(!!!enquos(...))) |> names())
+DS$set("public", "names", \(...) self$data |> select(...) |> names())
 
 DS$set("public", "vacuum", function() {
 	self$var_labels = self$var_labels[names(self$var_labels) %in% self$variables]
@@ -147,7 +149,7 @@ DS$set("public", "vacuum", function() {
 })
 
 DS$set("public", "keep", function(...) {
-	var_names = self$get_col_names(...)
+	var_names = self$names(...)
 
 	self$data = self$data |> select(all_of(var_names))
 	self$var_labels = self$var_labels[intersect(names(self$var_labels), var_names)]
@@ -155,7 +157,7 @@ DS$set("public", "keep", function(...) {
 })
 
 DS$set("public", "remove", function(...) {
-	var_names = self$get_col_names(...)
+	var_names = self$names(...)
 
 	# self$data = self$data |> select(-all_of(var_names))
 	self$data = self$data[setdiff(names(self$data), var_names)]
@@ -216,7 +218,7 @@ DS$set("public", "set_var_label", function(var, label) {
 DS$set("public", "set_val_labels", function(vars, labels) {
 	if (is.character(labels)) labels = conv_to_labels(labels)
 
-	for (var in self$get_col_names({{ vars }})) {
+	for (var in self$names({{ vars }})) {
 		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = TRUE)])
 	}
 })
@@ -229,7 +231,7 @@ DS$set("public", "set_labels", function(var, label, labels) {
 DS$set("public", "add_labels", function(vars, new_labels) {
 	if (is.character(new_labels)) new_labels = conv_to_labels(new_labels)
 
-	for (var in self$get_col_names({{ vars }})) {
+	for (var in self$names({{ vars }})) {
 		# self$set_val_labels(var, c(self$val_labels[[var]], new_labels))
 		self$set_val_labels({{ var }}, c(self$val_labels[[var]], new_labels))
 	}
@@ -238,7 +240,7 @@ DS$set("public", "add_labels", function(vars, new_labels) {
 
 
 DS$set("public", "remove_labels", function(vars, ...) {
-	vars = self$get_col_names({{ vars }})
+	vars = self$names({{ vars }})
 
 	if (length(list(...)) == 0) self$val_labels[vars] = NULL
 	else self$val_labels[vars] = map(self$val_labels[vars], \(label) label[!label %in% c(...)])
@@ -290,7 +292,7 @@ flip_scale = function(var, ...) {
 DS$set("public", "flip_scale", function(vars, ...) {
 	ids = c(...)
 
-	for (var in self$get_col_names({{ vars }})) {
+	for (var in self$names({{ vars }})) {
 		from_index = match(ids, ds$val_labels[[var]])
 		to_index = rev(from_index)
 

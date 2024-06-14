@@ -2,18 +2,18 @@
 
 DS$set("public", "merge_vars", function(...) {
 	# var_names = list(...)
-	var_names = self$get_col_names(...)
+	var_names = self$names(...)
 	self$data[[var_names[[1]]]] = var_names |> map(\(var_name) self$data[[var_name]]) |> pmap(\(...) c(...) |> mrcheck())
 })
 
 DS$set("public", "to_multiple", function(...) {
-	for (var in self$get_col_names(...)) {
+	for (var in self$names(...)) {
 		if (!is_multiple(self$data[[var]])) self$data[[var]] = map(self$data[[var]], mrcheck)
 	}
 })
 
 DS$set("public", "to_single", function(...) {
-	for (var in self$get_col_names(...)) {
+	for (var in self$names(...)) {
 		if (is_multiple(self$data[[var]])) {
 			if (!all(lengths(self$data[[var]]) <= 1)) stop(sprintf("Error, %s has more than 1 value", var))
 			self$data[[var]] = map_dbl(self$data[[var]], \(x) if (length(x) == 0) NA else x[[1]])
@@ -68,7 +68,7 @@ DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL
 
 
 DS$set("public", "nvn_src", function(vars, suffix = NULL, label_suffix = NULL, labels = NULL, move = T, presuffix = NULL) {
-	var_names = self$get_col_names({{ vars }})
+	var_names = self$names({{ vars }})
 
 	# new_vars = paste(var_names, suffix, sep = "_")
 	new_vars = var_renamer(var_names, suffix, presuffix)
@@ -105,7 +105,7 @@ DS$set("public", "nvn_src", function(vars, suffix = NULL, label_suffix = NULL, l
 DS$set("public", "nvs_src", function(vars, suffix = NULL, label_suffix = NULL, move = T, presuffix = NULL) {
 	self$nvn_src({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, presuffix = presuffix)
 
-	new_vars = var_renamer(self$get_col_names({{ vars }}), suffix, presuffix)
+	new_vars = var_renamer(self$names({{ vars }}), suffix, presuffix)
 	self$remove_labels({{ new_vars }})
 })
 
@@ -123,8 +123,8 @@ var_renamer = function(var_names, suffix = NULL, presuffix = NULL) {
 
 DS$set("public", "transfer_to", function(new_vars, from_vars, ...) {
 	walk2(
-		self$get_col_names({{ new_vars }}),
-		self$get_col_names({{ from_vars }}),
+		self$names({{ new_vars }}),
+		self$names({{ from_vars }}),
 		\(x, y) {
 			self$data[[x]] = self$data[[y]]
 		}
@@ -181,7 +181,7 @@ DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 
 	if (!all(self$data |> select({{ vars }}) |> map_lgl(is_multiple))) stop("Error: Expecting variables of multiple type.")
 
-	for (var in self$get_col_names({{ vars }})) {
+	for (var in self$names({{ vars }})) {
 		self$data[[var]] = self$data[[var]] |> modify_at(has(self$data[[var]], ...), \(x) add_to_mrset(x, value))
 	}
 
@@ -208,7 +208,7 @@ DS$set("public", "vstrip", function(vars, ...) {
 
 
 DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NULL, labels = NULL, move = T, suffix_position = "auto", else_copy = F) {
-	var_names = self$get_col_names({{ vars }})
+	var_names = self$names({{ vars }})
 
 	if (length(var_names) > 1) {
 		new_vars = var_renamer(var_names, presuffix = suffix)
@@ -234,7 +234,7 @@ DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NU
 DS$set("public", "make_means", function(vars, ..., suffix = "MEAN", label_suffix = "(MEAN)", move = T, suffix_position = "auto", vdiscard = NULL, else_copy = F) {
 	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, move = move, suffix_position = suffix_position, else_copy = else_copy)
 
-	var_names = self$get_col_names({{ vars }})
+	var_names = self$names({{ vars }})
 
 	if (length(var_names) > 1) {
 		new_vars = var_renamer(var_names, presuffix = suffix)
