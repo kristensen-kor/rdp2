@@ -263,7 +263,7 @@ has = function(var, ...) {
 	values = c(...)
 
 	if (length(values) == 1) {
-		vapply(var, \(x) any(x == values), FUN.VALUE = logical(1), USE.NAMES = F)
+		vapply(var, \(x) any(x == values, na.rm = T), FUN.VALUE = logical(1), USE.NAMES = F)
 	} else {
 		vapply(var, \(x) any(x %in% values), FUN.VALUE = logical(1), USE.NAMES = F)
 	}
