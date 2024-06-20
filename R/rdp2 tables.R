@@ -742,3 +742,6 @@ excel_tables = function(..., filename, no_contents = F, options_format = "num") 
 
 	saveWorkbook(wb, filename, overwrite = T)
 }
+
+#' @export
+excel_tables_nc = function(...) excel_tables(..., no_contents = T)

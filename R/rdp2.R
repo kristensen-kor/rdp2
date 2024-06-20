@@ -243,8 +243,8 @@ DS$set("public", "add_labels", function(vars, new_labels) {
 	if (is.character(new_labels)) new_labels = conv_to_labels(new_labels)
 
 	for (var in self$names({{ vars }})) {
-		# self$set_val_labels(var, c(self$val_labels[[var]], new_labels))
-		self$set_val_labels({{ var }}, c(self$val_labels[[var]], new_labels))
+		labels = c(self$val_labels[[var]], new_labels)
+		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = TRUE)])
 	}
 })
 
@@ -261,6 +261,8 @@ DS$set("public", "remove_labels", function(vars, ...) {
 #' @export
 has = function(var, ...) {
 	values = c(...)
+
+	# if !is_multiple: ifelse(is.na(xs), FALSE, xs == 2)
 
 	if (length(values) == 1) {
 		vapply(var, \(x) any(x == values, na.rm = T), FUN.VALUE = logical(1), USE.NAMES = F)
@@ -281,7 +283,7 @@ bitcount = function(var, ...) {
 	}
 }
 
-
+# add non_valid values function
 
 
 #' @export
