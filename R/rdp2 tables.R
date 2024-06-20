@@ -744,4 +744,4 @@ excel_tables = function(..., filename, no_contents = F, options_format = "num") 
 }
 
 #' @export
-excel_tables_nc = function(...) excel_tables(..., no_contents = T)
+excel_tables_nc = function(..., filename, options_format = "num") excel_tables(..., filename = filename, options_format = options_format, no_contents = T)
