@@ -348,7 +348,7 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 	})
 
 	if (is.null(index_labels)) index_labels = as.character(index_values)
-	self$set_val_labels(index, index_labels)
+	self$set_val_labels({{ index }}, index_labels)
 
 	if (!is.null(index_label)) self$var_labels[[index]] = index_label
 })

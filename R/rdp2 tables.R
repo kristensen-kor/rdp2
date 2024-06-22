@@ -535,10 +535,8 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad)
 
 	# total < 10
-	cells = which(rows$type == "total" & res < 10, arr.ind = TRUE)
-	# dummy_res = rows$type == "total" & res < 10
-	# cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(fgFill = "#F9F9F6")
+	cells = which(rows$type == "total" & res < 10, arr.ind = TRUE)
 	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad, stack = T)
 
 	# percent values format
@@ -633,26 +631,38 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	addStyle(wb, sheet = sheet, createStyle(fgFill = "#EFEFEC"), rows = 1:cols_pad, cols = 1:rows_pad, gridExpand = T, stack = T)
 
 	# low base
-	rows_dummy = rep(rows$type, ncol(res))
-
-	qblocks = map(which(rows_dummy == "total"), \(x) {
-		indices = seq_along(rows_dummy)
-		indices = indices[-(1:x)]
-		next_index = rows_dummy[indices] |> detect_index(\(a) a %in% c("total", "filter", "spacer", "block"))
-
-		skip = 0
-		if (x > 1 && rows_dummy[x - 1] %in% c("spacer", "block", "filter")) skip = skip + 1
-		if (x > 2 && rows_dummy[x - 2] %in% c("spacer", "block", "filter")) skip = skip + 1
-		if (x > 3 && rows_dummy[x - 3] %in% c("spacer", "block", "filter")) skip = skip + 1
-		list(from = x, cnt = if (next_index == 0) length(rows_dummy) - x + 1 else next_index, skip = skip)
-
-	})
-
-	cells = map(qblocks, \(x) c(rep(F, x$skip), rep(res[x$from] < 10, x$cnt))) 	|> unlist() |> matrix(ncol = ncol(res)) |> which(arr.ind = T)
-	# total_ind = which(rep(rows$type, ncol(res)) == "total")
-	# cells = Map(\(x, y) rep(res[x] < 10, y - x + 1), total_ind, c((total_ind - 1)[-1], length(res))) |> unlist() |> matrix(ncol = ncol(res)) |> which(arr.ind = T)
 	style = createStyle(fontColour = "#A6A6A6")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad, stack = T)
+
+	find_blocks = function(xs) {
+		n = length(xs)
+
+		pairs = which(xs == "total") |> map(\(from) {
+			to = from
+
+			while (to < n && xs[to + 1] %in% c("single", "multiple", "mean")) {
+				to = to + 1
+			}
+
+			seq(from, to)
+		})
+
+		pairs
+	}
+
+	qblocks = find_blocks(rows$type)
+
+	res_logical = matrix(F, nrow = nrow(res), ncol = ncol(res))
+
+	for (y in seq_len(ncol(res))) {
+		for (x in qblocks) {
+			if (res[x[1], y] < 10) res_logical[x, y] = T
+		}
+	}
+
+	coords = which(res_logical, arr.ind = T)
+
+	addStyle(wb, sheet = sheet, style, rows = coords[, 1] + cols_pad, cols = coords[, 2] + rows_pad, stack = T)
+
 
 	# sigs
 	coords = which(matrix(sigs == "+", ncol = ncol(sigs)), arr.ind = TRUE)

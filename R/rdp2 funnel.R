@@ -1,9 +1,6 @@
 #' @include rdp2.R
 
-DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL, sheet = NULL, filename = NULL) {
-	if (is.null(filename)) stop("Please specify filename")
-	if (!endsWith(filename, ".xlsx")) filename = paste0(filename, ".xlsx")
-
+DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL, sheet = "", filename = NULL) {
 	vars = self$names(...)
 
 	values = vars |> map(\(var) self$prepare_val_labels(var, warning = T))
@@ -21,15 +18,11 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL
 		!!!setNames(map(distr, \(x) x[-1]), vars)
 	)
 
-	# for (i in seq_along(vars)) {
-	# 	res_table[[vars[i]]] = distr[[i]][-1]
-	# }
-
 	if (!is.null(exclude_code)) res_table = res_table |> filter(value != exclude_code)
 
 	for (i in seq_along(vars[-1])) {
 		conv = res_table[[vars[i + 1]]] /  res_table[[vars[i]]]
-		conv[is.nan(conv)] = 0
+		conv[is.na(conv) | is.infinite(conv)] = 0
 
 		if (any(conv > 1)) {
 			cat("Warning: some conversions > 100%\n")
@@ -37,16 +30,17 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL
 		}
 
 		col_name = paste_vars("conv", i)
-		res_table[[col_name]] = conv
-		res_table = res_table |> relocate(all_of(col_name), .after = vars[i])
+		res_table = res_table |> mutate({{ col_name }} := conv, .after = vars[i])
 	}
 
+	res = list(vars = vars, labels = self$get_var_labels(all_of(vars)), res_table = res_table, base = bases[1], sheet = sheet)
 
-	# export
-	wb = createWorkbook(creator = "rdp2")
-	modifyBaseFont(wb, fontSize = 10, fontName = "Arial")
+	if (!is.null(filename)) self$funnel_tables(res, filename = filename)
 
-	if (is.null(sheet)) sheet = "Sheet1"
+	invisible(res)
+})
+
+add_funnel_sheet = function(wb, sheet, vars, labels, res_table, base) {
 	addWorksheet(wb, sheetName = sheet)
 
 	ids1 = seq_along(vars) * 2 - 1
@@ -79,8 +73,8 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL
 	addStyle(wb, sheet = sheet, createStyle(halign = "right", numFmt = "0%"), rows = cells[, 1] + 2, cols = cells[, 2] + 2)
 
 	for (i in seq_len(length(vars) - 1)) {
-		cur_bases = res_table[[1 + i * 2]] * bases[1]
-		sigs = sign_pct_vec(bases[1], avg_convestions_raw[i], cur_bases, res_table[[2 + i * 2]])
+		cur_bases = res_table[[1 + i * 2]] * base
+		sigs = sign_pct_vec(base, avg_convestions_raw[i], cur_bases, res_table[[2 + i * 2]])
 
 		coords = which(matrix(sigs == "+", ncol = 1), arr.ind = TRUE)
 		addStyle(wb, sheet = sheet, createStyle(fontColour  = "#66e466"), rows = coords[, 1] + 2, cols = coords[, 2] + 1 + i * 2, stack = T)
@@ -93,7 +87,7 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL
 	}
 
 	brand_labels = rep(NA, length(vars) * 2 - 1)
-	brand_labels[ids1] = self$get_var_labels(all_of(vars))
+	brand_labels[ids1] = labels
 	brand_labels[ids2] = "Conversion"
 
 	brand_names = rep(NA, length(vars) * 2 - 1)
@@ -111,7 +105,22 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL
 
 	writeData(wb, sheet = sheet, xy = c(1, nrow(res_table) + 6), x = "n =")
 	addStyle(wb, sheet = sheet, createStyle(halign = "right", numFmt = "0"), rows = nrow(res_table) + 6, cols = 2)
-	writeData(wb, sheet = sheet, xy = c(2, nrow(res_table) + 6), x = bases[1])
+	writeData(wb, sheet = sheet, xy = c(2, nrow(res_table) + 6), x = base)
+}
+
+DS$set("public", "funnel_tables", function(..., filename = NULL) {
+	if (is.null(filename)) stop("Please specify filename")
+	if (!endsWith(filename, ".xlsx")) filename = paste0(filename, ".xlsx")
+
+	data = list(...)
+
+	wb = createWorkbook(creator = "rdp2")
+	modifyBaseFont(wb, fontSize = 10, fontName = "Arial")
+
+	sheets = map_chr(data, \(x) x$sheet)
+	sheets = ifelse(sheets == "", paste0("Sheet", seq_along(sheets)), sheets)
+
+	walk2(data, sheets, \(x, sheet) add_funnel_sheet(wb, sheet, x$vars, x$labels, x$res_table, x$base))
 
 	saveWorkbook(wb, filename, overwrite = T)
 })
