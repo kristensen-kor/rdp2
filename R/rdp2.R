@@ -29,6 +29,9 @@ add_to_mrset = function(vec, value) {
 }
 # add_to_mrset = function(var, value) c(var, value) |> mrcheck()
 
+is_valid = function(...) UseMethod("is_valid")
+is_valid.list = function(xs) lengths(xs) > 0
+is_valid.default = function(xs) !is.na(xs)
 
 recode = function(...) UseMethod("recode")
 recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
@@ -259,17 +262,51 @@ DS$set("public", "remove_labels", function(vars, ...) {
 
 
 #' @export
+#'
 has = function(var, ...) {
 	values = c(...)
 
-	# if !is_multiple: ifelse(is.na(xs), FALSE, xs == 2)
-
 	if (length(values) == 1) {
-		vapply(var, \(x) any(x == values, na.rm = T), FUN.VALUE = logical(1), USE.NAMES = F)
+		has1(var, values)
 	} else {
-		vapply(var, \(x) any(x %in% values), FUN.VALUE = logical(1), USE.NAMES = F)
+		has_mult(var, values)
 	}
 }
+
+has1 = function(...) UseMethod("has1")
+
+has1.list = function(var, value) {
+	result = logical(length(var))
+
+	for (i in seq_along(var)) {
+		result[i] = any(var[[i]] == value)
+	}
+
+	result
+}
+
+has1.default = function(var, value) {
+	xs = var == value
+	xs[is.na(xs)] = F
+	xs
+}
+
+has_mult = function(...) UseMethod("has_mult")
+
+has_mult.list = function(var, values) {
+	result = logical(length(var))
+
+	for (i in seq_along(var)) {
+		result[i] = any(var[[i]] %in% values)
+	}
+
+	result
+}
+
+has_mult.default = function(var, values) var %in% values
+
+
+
 # also between
 
 #' @export

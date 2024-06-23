@@ -235,48 +235,19 @@ gen_free_name = function(xs, name) {
 	}
 }
 
-calc_rows_simple = function(tds, tdf, values_list, row_var_name, weight) {
-	weights = tdf[[weight]]
-	row_vec = tdf[[row_var_name]]
-
-	if (tds$is_nominal(row_var_name)) {
-		row_values = values_list[[row_var_name]]
-
-		if (is_multiple(row_vec)) {
-			p = vapply(row_values, \(x) sum(weights[vapply(row_vec, \(y) any(y == x), logical(1))]), double(1))
-			total_sum = sum(weights[lengths(row_vec) > 0])
+calc_rows_simple = function(vec, weights, row_values = NULL) {
+	if (!is.null(row_values)) {
+		if (length(vec) == 0) {
+			res = c(0, rep(NA, length(row_values)))
 		} else {
-			p = tapply(weights, row_vec, sum)[as.character(row_values)] |> unname()
-			p[is.na(p)] = 0
-			total_sum = sum(p)
+			res = calc_raw_table_nominal(vec, weights, row_values)
 		}
-
-		if (total_sum == 0) {
-			p = rep(NA, length(row_values))
-		} else {
-			p = p / total_sum
-		}
-
-		matrix(c(total_sum, p))
 	} else {
-		weights = weights[!is.na(row_vec)]
-		row_vec = row_vec[!is.na(row_vec)]
-
-		total_sum = sum(weights)
-
-		if (total_sum == 0) {
-			m = NA
-			s = NA
-		} else {
-			m = weighted.mean(row_vec, weights)
-			s = (sum(weights * (row_vec - m) ^ 2) / (sum(weights) - 1)) ^ 0.5
-		}
-
-		matrix(c(total_sum, m, s))
+		res = calc_raw_table_mean(vec, weights)
 	}
+
+	matrix(res)
 }
-
-
 
 # add filter?
 # add excel export?
@@ -329,21 +300,14 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 		col_vec = tds$data[[col_var]]
 
 		do.call(cbind, map(values_list[[col_var]], \(col_var_value) {
-			if (is_multiple(col_vec)) {
-				cond = vapply(col_vec, \(x) any(col_var_value == x), logical(1))
-			} else {
-				cond = col_vec == col_var_value
-			}
+
+			cond = has(col_vec, col_var_value)
 
 			do.call(cbind, map(waves_cols, \(wave_var_value) {
 				if (wave_var_value != "none") {
 					wave_vec = tds$data[[waves]]
 
-					if (is_multiple(wave_vec)) {
-						wave_cond = vapply(wave_vec, \(x) any(wave_var_value == x), logical(1))
-					} else {
-						wave_cond = wave_vec == wave_var_value
-					}
+					wave_cond = has(wave_vec, wave_var_value)
 
 					cond = cond & wave_cond
 				}
@@ -352,21 +316,21 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 
 				do.call(rbind, map(row_vars, \(row_var) {
 					if (!is.list(row_var)) {
-						calc_rows_simple(tds, tdf, values_list, row_var, weight)
+						valid_mask = is_valid(tdf[[row_var]])
+						calc_rows_simple(tdf[[row_var]][valid_mask], tdf[[weight]][valid_mask], values_list[[row_var]])
 					} else {
 						if ("filter_var" %in% names(row_var)) {
 							col_vec = tdf[[row_var$filter_var]]
 
-							if (is_multiple(col_vec)) {
-								cond = vapply(col_vec, \(x) any(row_var$filter_value == x), logical(1))
-							} else {
-								cond = col_vec == row_var$filter_value
-							}
+							cond = has(col_vec, row_var$filter_value)
 
 							tdf = tdf[cond, ]
 						}
 
-						blocks = do.call(rbind, map(row_var$vars, \(row_var_name) calc_rows_simple(tds, tdf, values_list, row_var_name, weight)))
+						blocks = do.call(rbind, map(row_var$vars, \(row_var_name) {
+							valid_mask = is_valid(tdf[[row_var_name]])
+							calc_rows_simple(tdf[[row_var_name]][valid_mask], tdf[[weight]][valid_mask], values_list[[row_var_name]])
+						}))
 
 						blocks = rbind(NA, blocks)
 						if ("filter_var" %in% names(row_var)) blocks = rbind(NA, blocks)
@@ -441,7 +405,7 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 	# remove empty columns
 	cols_tibble = cols_tibble |>
 		mutate(is_empty = apply(res, 2, \(col) all(col == 0 | is.na(col)))) |>
-		group_by(var, var_label, val_label) |> mutate(empty_group = all(is_empty)) |> ungroup()
+		group_by(var, val) |> mutate(empty_group = all(is_empty)) |> ungroup()
 	# cols_tibble = cols_tibble[which(!apply(res, 2, \(col) all(col == 0 | is.na(col)))), ]
 
 	# sigs = sigs[, -which(apply(res, 2, \(col) all(col == 0)))]

@@ -1,25 +1,29 @@
 #' @include rdp2.R
 #'
-DS$set("private", "get_res_vec", function(total_sum, p) {
+
+get_res_vec = function(total_sum, p) {
 	if (total_sum == 0) {
-		c(total_sum, rep(NA, length(row_values)))
+		c(total_sum, rep(NA, length(p)))
 	} else {
 		c(total_sum, p / total_sum)
 	}
-})
+}
 
-DS$set("private", "calc_raw_table_single", function(vec, weights, row_values) {
-	p = tapply(weights, vec, sum)[as.character(row_values)] |> unname()
-	p[is.na(p)] = 0
-	private$get_res_vec(sum(p), p)
-})
+calc_raw_table_nominal = function(...) UseMethod("calc_raw_table_nominal")
 
-DS$set("private", "calc_raw_table_multiple", function(vec, weights, row_values) {
-	p = vapply(row_values, \(x) sum(weights[vapply(vec, \(y) any(y == x), logical(1))]), double(1))
+calc_raw_table_nominal.list = function(vec, weights, row_values) {
+	p = vapply(row_values, \(x) sum(weights[has(vec, x)]), double(1))
 	total_sum = sum(weights[lengths(vec) > 0])
 
-	private$get_res_vec(total_sum, p)
-})
+	get_res_vec(total_sum, p)
+}
+
+calc_raw_table_nominal.default = function(vec, weights, row_values) {
+	p = tapply(weights, vec, sum)[as.character(row_values)] |> unname()
+	p[is.na(p)] = 0
+
+	get_res_vec(sum(p), p)
+}
 
 DS$set("private", "calc_raw_table", function(var, weight = NULL) {
 	vec = self$data[[var]]
@@ -28,9 +32,21 @@ DS$set("private", "calc_raw_table", function(var, weight = NULL) {
 
 	row_values = self$prepare_val_labels(var)
 
-	if (is_multiple(vec)) {
-		private$calc_raw_table_multiple(vec, weights, row_values)
-	} else {
-		private$calc_raw_table_single(vec, weights, row_values)
-	}
+	calc_raw_table_nominal(vec, weights, row_values)
 })
+
+calc_raw_table_mean = function(vec, weights) {
+	total_sum = sum(weights)
+
+	if (total_sum == 0) {
+		m = NA
+		s = NA
+	} else {
+		m = sum(weights * vec) / sum(weights) # weighted.mean(vec, weights)
+		s = (sum(weights * (vec - m) ^ 2) / (sum(weights) - 1)) ^ 0.5
+	}
+
+	c(total_sum, m, s)
+}
+
+
