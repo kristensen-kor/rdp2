@@ -22,17 +22,16 @@ DS$set("public", "to_single", function(...) {
 })
 
 
-
 DS$set("public", "recode", function(cols, ...) {
-	self$data = self$data |> apply_to({{ cols }}, \(var) recode(var, ...))
+	self$data = self$data |> mutate(across({{ cols }}, \(var) recode(var, ...)))
 })
 
 DS$set("public", "transfer", function(cols, ...) {
-	self$data = self$data |> apply_to({{ cols }}, \(var) transfer(var, ...))
+	self$data = self$data |> mutate(across({{ cols }}, \(var) transfer(var, ...)))
 })
 
 DS$set("public", "recode_empty", function(cols, value, label = NULL) {
-	self$data = self$data |> apply_to({{ cols }}, \(var) recode_empty(var, value))
+	self$data = self$data |> mutate(across({{ cols }}, \(var) recode_empty(var, value)))
 
 	if (!is.null(label)) self$add_labels({{ cols }}, setNames(value, label))
 })

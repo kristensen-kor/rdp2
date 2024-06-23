@@ -52,29 +52,10 @@ var_empty.list = function(var) lengths(var) == 0
 var_empty.default = function(var) is.na(var)
 
 #' @export
-recode_empty = function(...) UseMethod("recode_empty")
-
-#' @export
-recode_empty.list = function(var, value) map(var, \(x) if (length(x) == 0) value else x)
-# replace with var[var_empty(var)] = value
-# replace with var[lengths(var) == 0] = value
-# replace with ifelse(lengths(var) == 0, value, var)
-
-#' @export
-recode_empty.default = function(var, value) replace(var, is.na(var), value)
-
-
-# apply_to = function(df, cols, f) df |> mutate(across({{ cols }}, f))
-# names = function(df, ...) df |> select(...) |> names()
-# apply_to = function(df, cols, f) df |> mutate(across(get_col_names(df, {{ cols }}), f))
-# apply_to = function(df, cols, f) df |> mutate(across(all_of(df |> select({{ cols }}) |> names()), f))
-# apply_to = function(df, cols, f) {
-# 	vars = df |> select({{ cols }}) |> names()
-# 	df |> mutate(across(all_of(vars), f))
-# }
-
-#' @export
-apply_to = function(df, cols, f) df |> mutate(across(all_of(df |> select({{ cols }}) |> names()), f))
+recode_empty = function(var, value) {
+	var[!is_valid(var)] = value
+	var
+}
 
 #' @export
 elapsed_fmt = function(x) {
