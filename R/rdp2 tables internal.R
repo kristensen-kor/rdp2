@@ -53,11 +53,11 @@ calc_raw_table_mean = function(vec, weights) {
 calc_raw_counts = function(...) UseMethod("calc_raw_counts")
 
 calc_raw_counts.list = function(vec, row_values) {
-	list(sum_cnts = sum(lengths(vec) > 0), cnts = vapply(row_values, \(x) sum(has(vec, x)), integer(1)))
+	c(sum(lengths(vec) > 0), vapply(row_values, \(x) sum(has(vec, x)), integer(1)))
 }
 
 calc_raw_counts.default = function(vec, row_values) {
 	cnts = table(vec)[as.character(row_values)] |> unname()
 	cnts[is.na(cnts)] = 0
-	list(sum_cnts = sum(cnts), cnts = cnts)
+	c(sum(cnts), cnts)
 }

@@ -52,61 +52,34 @@ DS$set("public", "mutate", function(...) {
 	self$data = self$data |> mutate(...)
 })
 
-DS$set("public", "nvn", function(name, label = NULL, labels = NULL, fill = NA, after = NULL, before = NULL) {
-	self$data = self$data |> mutate("{ name }" := fill, .after = {{ after }}, .before = {{ before }})
+DS$set("private", "nv_generic", function(name, label = NULL, labels = NULL, fill = NA, after = NULL, before = NULL, var_type = "single") {
+	if (name %in% self$variables) cat("Warning:", name, "is already present. Replacing.\n")
+
+	if (var_type == "single") {
+		self$data = self$data |> mutate("{ name }" := fill)
+	} else {
+		self$data[[name]] = rep(list(numeric(0)), self$nrow)
+	}
+
+	if (xor(!is.null(after), !is.null(before))) self$data = self$data |> relocate(all_of(name), .after = {{ after }}, .before = {{ before }})
 	if (!is.null(label)) self$var_labels[[name]] = label
 	if (!is.null(labels)) self$set_val_labels({{ name }}, labels)
+})
+
+DS$set("public", "nvn", function(name, label = NULL, labels = NULL, fill = NA, after = NULL, before = NULL) {
+	private$nv_generic(name, label, labels, fill, after, before, "single")
+})
+
+
+
+DS$set("public", "nvs", function(name, label = NULL, fill = NA, after = NULL, before = NULL) {
+	private$nv_generic(name, label, NULL, fill, after, before, "single")
 })
 
 DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL, before = NULL) {
-	# self$data = self$data |> mutate("{ name }" := map(seq_len(nrow(self$data)), \(x) numeric(0)), .after = {{ after }}, .before = {{ before }})
-	self$data = self$data |> mutate("{ name }" := rep(list(numeric(0)), nrow(self$data)), .after = {{ after }}, .before = {{ before }})
-	if (!is.null(label)) self$var_labels[[name]] = label
-	if (!is.null(labels)) self$set_val_labels({{ name }}, labels)
+	private$nv_generic(name, label, labels, NULL, after, before, "multiple")
 })
 
-
-DS$set("public", "nvn_src", function(vars, suffix = NULL, label_suffix = NULL, labels = NULL, move = T, presuffix = NULL) {
-	var_names = self$names({{ vars }})
-
-	# new_vars = paste(var_names, suffix, sep = "_")
-	new_vars = var_renamer(var_names, suffix, presuffix)
-
-	walk2(
-		var_names,
-		new_vars,
-		\(var, new_var) {
-			if (new_var %in% self$variables) cat("Warning:", new_var, "is already present. Replacing.\n")
-
-			# new_labels = labels %||% self$val_labels[[var]]
-			# new_labels = self$val_labels[[var]]
-			# if (!is.null(labels)) new_labels = labels
-
-			# self$nvn(new_var, self$var_labels[[var]], new_labels)
-			self$nvn(new_var, self$var_labels[[var]], labels %||% self$val_labels[[var]])
-		}
-	)
-
-	# self$data = bind_cols(self$data, tibble(!!!setNames(rep(NA, length(new_vars)), new_vars)))
-	#
-	# self$val_labels = c(self$val_labels, setNames(self$val_labels[var_names], new_vars))
-	# self$var_labels = c(self$var_labels, setNames(self$var_labels[var_names], new_vars))
-	#
-
-
-	if (!is.null(label_suffix)) {
-		self$var_labels[new_vars] = map(self$var_labels[new_vars], \(text) paste(text, label_suffix, sep = " "))
-	}
-
-	if (move) self$data = self$data |> relocate(all_of(new_vars), .after = {{ vars }})
-})
-
-DS$set("public", "nvs_src", function(vars, suffix = NULL, label_suffix = NULL, move = T, presuffix = NULL) {
-	self$nvn_src({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, presuffix = presuffix)
-
-	new_vars = var_renamer(self$names({{ vars }}), suffix, presuffix)
-	self$remove_labels({{ new_vars }})
-})
 
 var_renamer = function(var_names, suffix = NULL, presuffix = NULL) {
 	stopifnot(xor(is.null(suffix), is.null(presuffix)))
@@ -120,28 +93,46 @@ var_renamer = function(var_names, suffix = NULL, presuffix = NULL) {
 	}
 }
 
+DS$set("public", "nvn_src", function(vars, suffix = NULL, label_suffix = NULL, labels = NULL, move = T, presuffix = NULL) {
+	var_names = self$names({{ vars }})
+	new_vars = var_renamer(var_names, suffix, presuffix)
+
+	walk2(
+		var_names,
+		new_vars,
+		\(var, new_var) self$nvn(new_var, self$var_labels[[var]], labels %||% self$val_labels[[var]])
+	)
+
+	if (!is.null(label_suffix)) self$var_labels[new_vars] = self$var_labels[new_vars] |> map(\(text) paste(text, label_suffix, sep = " "))
+	if (move) self$data = self$data |> relocate(all_of(new_vars), .after = {{ vars }})
+
+	invisible(new_vars)
+})
+
+DS$set("public", "nvs_src", function(vars, suffix = NULL, label_suffix = NULL, move = T, presuffix = NULL) {
+	new_vars = self$nvn_src({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, presuffix = presuffix)
+	self$remove_labels(all_of(new_vars))
+	invisible(new_vars)
+})
+
+
+
 DS$set("public", "transfer_to", function(new_vars, from_vars, ...) {
 	walk2(
 		self$names({{ new_vars }}),
 		self$names({{ from_vars }}),
-		\(x, y) {
-			self$data[[x]] = self$data[[y]]
-		}
+		\(x, y) self$data[[x]] = self$data[[y]]
 	)
 
 	if (length(list(...)) > 0) self$transfer({{ new_vars }}, ...)
 })
 
 DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after = NULL) {
-	# self$data[[new_var]] = self$data[[from_var]]
-
 	self$data = self$data |> mutate("{ new_var }" := .data[[from_var]], .after = {{ after }})
 
 	self$var_labels[[new_var]] = if (!is.null(label)) label else self$var_labels[[from_var]]
 	self$val_labels[[new_var]] = self$val_labels[[from_var]]
 })
-
-
 
 
 
@@ -188,8 +179,8 @@ DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 })
 
 DS$set("public", "vdiscard", function(vars, ...) {
-	# self$recode({{ vars }}, as.formula(sprintf("c(%s) ~ NA", paste(c(...), collapse = ", "))))
 	values = c(...)
+
 	for (var in self$names({{ vars }})) {
 		if (is_multiple(self$data[[var]])) {
 			self$data[[var]] = self$data[[var]] |> map(\(x) x[is.na(match(x, values))])
@@ -203,7 +194,6 @@ DS$set("public", "vstrip", function(vars, ...) {
 	self$vdiscard({{ vars }}, ...)
 	self$remove_labels({{ vars }}, ...)
 })
-
 
 
 DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NULL, labels = NULL, move = T, suffix_position = "auto", else_copy = F) {

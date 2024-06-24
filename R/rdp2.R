@@ -121,6 +121,8 @@ DS$set("public", "open", function(filename) {
 
 DS$set("active", "variables", \() names(self$data))
 
+DS$set("active", "nrow", \() nrow(self$data))
+
 
 
 DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA)
@@ -129,7 +131,7 @@ DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(self$get_va
 
 DS$set("public", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
 
-DS$set("public", "is_nominal", \(var) var %in% names(self$val_labels))
+DS$set("public", "is_nominal", \(vars) (vars %in% names(self$val_labels)) | map_lgl(vars, \(var) is_multiple(self$data[[var]])))
 
 DS$set("public", "get_col_names", \(...) {
 	warning("$get_col_names() is deprecated. Please use $names() instead", call. = F)
@@ -137,6 +139,7 @@ DS$set("public", "get_col_names", \(...) {
 })
 
 DS$set("public", "names", \(...) self$data |> select(...) |> names())
+
 
 DS$set("public", "vacuum", function() {
 	self$var_labels = self$var_labels[names(self$var_labels) %in% self$variables]
@@ -199,7 +202,7 @@ conv_to_labels = function(labels) {
 
 
 
-DS$set("public", "add_total", \() self$nvn("total", "Total", "1 Total", 1))
+DS$set("public", "add_total", \() self$nvn("total", "Total", c("Total" = 1), fill = 1))
 
 DS$set("public", "add_label_suffix", function(vars, suffix, sep = " ") {
 	self$var_labels[vars] = map(self$var_labels[vars], \(label) paste(label, suffix, sep = sep))
@@ -265,6 +268,32 @@ has1.list = function(var, value) {
 
 	result
 }
+
+# replace with C++ version? 3x faster
+
+# has1.list = function(var, value) {
+# 	has1_list_cpp(var, value)
+# }
+#
+# Rcpp::cppFunction("
+# LogicalVector has1_list_cpp(List var, int value) {
+#   int n = var.size();
+#   LogicalVector result(n, false);
+#
+#   for (int i = 0; i < n; i++) {
+#     IntegerVector vec = var[i];
+#     int len = vec.size();
+#     for (int j = 0; j < len; j++) {
+#       if (vec[j] == value) {
+#         result[i] = true;
+#         break;
+#       }
+#     }
+#   }
+#
+#   return result;
+# }
+# ")
 
 has1.default = function(var, value) {
 	xs = var == value
@@ -356,7 +385,7 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 		group = map_chr(cols_list, i)
 		group_df = self$data |> select(all_of(group))
 		selected_cols = !cols_empty(group_df)
-		base_df = base_df[selected_cols, ] |> mutate(!!index := index_value)
+		base_df = base_df[selected_cols, ] |> mutate("{ index }" := index_value)
 		bind_cols(base_df, group_df[selected_cols, ])
 	}) |> list_rbind()
 

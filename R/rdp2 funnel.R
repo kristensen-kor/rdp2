@@ -30,7 +30,7 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL
 		}
 
 		col_name = paste_vars("conv", i)
-		res_table = res_table |> mutate({{ col_name }} := conv, .after = vars[i])
+		res_table = res_table |> mutate("{ col_name }" := conv, .after = vars[i])
 	}
 
 	res = list(vars = vars, labels = self$get_var_labels(all_of(vars)), res_table = res_table, base = bases[1], sheet = sheet)
