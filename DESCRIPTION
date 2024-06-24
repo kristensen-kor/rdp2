@@ -16,6 +16,7 @@ Imports:
     openxlsx
 Collate: 
     'rdp2.R'
+    'rdp2 has.R'
     'rdp2 funnel.R'
     'rdp2 qtable.R'
     'rdp2 tables internal.R'
