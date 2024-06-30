@@ -66,30 +66,3 @@ has_mult.list = function(var, values) {
 }
 
 has_mult.default = function(var, values) var %in% values
-
-
-# replace with C++ version? 3x faster
-
-# has1.list = function(var, value) {
-# 	has1_list_cpp(var, value)
-# }
-#
-# Rcpp::cppFunction("
-# LogicalVector has1_list_cpp(List var, int value) {
-#   int n = var.size();
-#   LogicalVector result(n, false);
-#
-#   for (int i = 0; i < n; i++) {
-#     IntegerVector vec = var[i];
-#     int len = vec.size();
-#     for (int j = 0; j < len; j++) {
-#       if (vec[j] == value) {
-#         result[i] = true;
-#         break;
-#       }
-#     }
-#   }
-#
-#   return result;
-# }
-# ")

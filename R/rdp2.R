@@ -163,13 +163,45 @@ DS$set("public", "remove", function(...) {
 	self$val_labels = self$val_labels[setdiff(names(self$val_labels), var_names)]
 })
 
-DS$set("public", "rename", function(from, to) {
-	if (!(from %in% self$variables)) stop(sprintf("%s not found", from))
-	if (to %in% self$variables) stop(sprintf("%s already exists", to))
+# DS$set("public", "rename", function(from, to) {
+# 	if (!(from %in% self$variables)) stop(sprintf("%s not found", from))
+# 	if (to %in% self$variables) stop(sprintf("%s already exists", to))
+#
+# 	names(self$data)[names(self$data) == from] = to
+# 	if (from %in% names(self$var_labels)) names(self$var_labels)[names(self$var_labels) == from] = to
+# 	if (from %in% names(self$val_labels)) names(self$val_labels)[names(self$val_labels) == from] = to
+# })
 
-	names(self$data)[names(self$data) == from] = to
-	if (from %in% names(self$var_labels)) names(self$var_labels)[names(self$var_labels) == from] = to
-	if (from %in% names(self$val_labels)) names(self$val_labels)[names(self$val_labels) == from] = to
+DS$set("public", "rename", function(names_from, names_to) {
+	cur_names = self$variables
+
+	if (length(names_from) != length(names_to)) stop("'names_from' and 'names_to' vectors must have the same length")
+	if (any(duplicated(names_from))) stop("duplicates found in 'names_from' vector")
+	if (any(duplicated(names_to))) stop("duplicates found in 'names_to' vector")
+	if (any(setdiff(cur_names, names_from) %in% names_to)) stop("renaming would produce duplicated names")
+
+	for (var_name in names_from) {
+		if (!(var_name %in% cur_names)) stop(sprintf("%s not found", var_name))
+	}
+
+	new_names_order = match(cur_names[cur_names %in% names_from], names_from)
+	names(self$data)[cur_names %in% names_from] = names_to[new_names_order]
+
+	cur_names = names(self$var_labels)
+	present_names = names_from %in% cur_names
+	filtered_names_from = names_from[present_names]
+	filtered_names_to = names_to[present_names]
+
+	new_names_order = match(cur_names[cur_names %in% filtered_names_from], filtered_names_from)
+	names(self$var_labels)[cur_names %in% filtered_names_from] = filtered_names_to[new_names_order]
+
+	cur_names = names(self$val_labels)
+	present_names = names_from %in% cur_names
+	filtered_names_from = names_from[present_names]
+	filtered_names_to = names_to[present_names]
+
+	new_names_order = match(cur_names[cur_names %in% filtered_names_from], filtered_names_from)
+	names(self$val_labels)[cur_names %in% filtered_names_from] = filtered_names_to[new_names_order]
 })
 
 DS$set("public", "move", function(..., after = NULL, before = NULL) {
@@ -258,6 +290,27 @@ bitcount = function(var, ...) {
 		map_dbl(var, \(x) length(x[x %in% c(...)]))
 	}
 }
+
+
+DS$set("public", "autocode_single", function(...) {
+	vars = self$names(...)
+
+	for (var_name in vars) {
+		vec = self$data[[var_name]]
+		values = NULL
+
+		if (is.numeric(vec)) {
+			values = vec |> unique() |> sort()
+			vec = formatC(vec, format = "f", big.mark = "", drop0trailing = T)
+			values = formatC(values, format = "f", big.mark = "", drop0trailing = T)
+		} else {
+			values = vec[vec != ""] |> unique() |> sort()
+		}
+
+		self$data[[var_name]] = match(vec, values) |> as.double()
+		self$set_val_labels(!!sym(var_name), setNames(seq_along(values), values))
+	}
+})
 
 
 

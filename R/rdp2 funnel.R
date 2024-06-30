@@ -1,6 +1,6 @@
 #' @include rdp2.R
 
-DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL, sheet = "", filename = NULL) {
+DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NULL, sheet = "", filename = NULL) {
 	vars = self$names(...)
 
 	values = vars |> map(\(var) self$prepare_val_labels(var, warning = T))
@@ -18,7 +18,7 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_code = NULL
 		!!!setNames(map(distr, \(x) x[-1]), vars)
 	)
 
-	if (!is.null(exclude_code)) res_table = res_table |> filter(value != exclude_code)
+	if (!is.null(exclude_codes)) res_table = res_table |> filter(!(value %in% exclude_codes))
 
 	for (i in seq_along(vars[-1])) {
 		conv = res_table[[vars[i + 1]]] /  res_table[[vars[i]]]
