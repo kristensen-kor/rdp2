@@ -26,43 +26,72 @@
 has = function(var, ...) {
 	values = c(...)
 
-	if (length(values) == 1) {
-		has1(var, values)
+	if (is.list(var)) {
+		result = logical(length(var))
+		if (length(values) == 1) {
+			for (i in seq_along(var)) {
+				result[i] = any(var[[i]] == values)
+			}
+		} else {
+			for (i in seq_along(var)) {
+				result[i] = any(var[[i]] %in% values)
+			}
+		}
 	} else {
-		has_mult(var, values)
-	}
-}
-
-
-has1 = function(...) UseMethod("has1")
-
-has1.list = function(var, value) {
-	result = logical(length(var))
-
-	for (i in seq_along(var)) {
-		result[i] = any(var[[i]] == value)
+		if (length(values) == 1) {
+			result = var == values
+			result[is.na(result)] = F
+		} else {
+			result = var %in% values
+		}
 	}
 
 	result
 }
 
-has1.default = function(var, value) {
-	xs = var == value
-	xs[is.na(xs)] = F
-	xs
-}
 
+# for the reference
 
-has_mult = function(...) UseMethod("has_mult")
-
-has_mult.list = function(var, values) {
-	result = logical(length(var))
-
-	for (i in seq_along(var)) {
-		result[i] = any(var[[i]] %in% values)
-	}
-
-	result
-}
-
-has_mult.default = function(var, values) var %in% values
+# has = function(var, ...) {
+# 	values = c(...)
+#
+# 	if (length(values) == 1) {
+# 		has1(var, values)
+# 	} else {
+# 		has_mult(var, values)
+# 	}
+# }
+#
+#
+# has1 = function(...) UseMethod("has1")
+#
+# has1.list = function(var, value) {
+# 	result = logical(length(var))
+#
+# 	for (i in seq_along(var)) {
+# 		result[i] = any(var[[i]] == value)
+# 	}
+#
+# 	result
+# }
+#
+# has1.default = function(var, value) {
+# 	xs = var == value
+# 	xs[is.na(xs)] = F
+# 	xs
+# }
+#
+#
+# has_mult = function(...) UseMethod("has_mult")
+#
+# has_mult.list = function(var, values) {
+# 	result = logical(length(var))
+#
+# 	for (i in seq_along(var)) {
+# 		result[i] = any(var[[i]] %in% values)
+# 	}
+#
+# 	result
+# }
+#
+# has_mult.default = function(var, values) var %in% values
