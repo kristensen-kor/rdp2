@@ -1,6 +1,16 @@
 #' @include rdp2.R
 #'
 
+# calc_raw_table_nominal = function(vec, weights, row_values) {
+# 	total_sum = sum(weights[is_valid(vec)])
+#
+# 	if (total_sum == 0) {
+# 		c(total_sum, rep(NA, length(row_values)))
+# 	} else {
+# 		c(total_sum, vapply(row_values, \(x) sum(weights[has(vec, x)]), double(1)) / total_sum)
+# 	}
+# }
+
 get_res_vec = function(total_sum, p) {
 	if (total_sum == 0) {
 		c(total_sum, rep(NA, length(p)))
@@ -49,6 +59,10 @@ calc_raw_table_mean = function(vec, weights) {
 	c(total_sum, m, s)
 }
 
+
+# calc_raw_counts = function(vec, row_values) {
+# 	c(sum(is_valid(vec)), vapply(row_values, \(x) sum(has(vec, x)), integer(1)))
+# }
 
 calc_raw_counts = function(...) UseMethod("calc_raw_counts")
 

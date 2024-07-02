@@ -33,15 +33,31 @@ is_valid = function(...) UseMethod("is_valid")
 is_valid.list = function(xs) lengths(xs) > 0
 is_valid.default = function(xs) !is.na(xs)
 
-recode = function(...) UseMethod("recode")
-recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
-recode.default = function(var, ...) case_match(var, ..., .default = var)
+# recode = function(...) UseMethod("recode")
+# recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
+# recode.default = function(var, ...) case_match(var, ..., .default = var)
 
-#' @export
+recode = function(...) UseMethod("recode")
+recode.list = function(var, ...) map(var, \(x) case_match_vec_copy(x, ...) |> mrcheck())
+recode.default = function(var, ...) case_match_vec_copy(var, ...)
+
+case_match_vec_copy = function(xs, ...) {
+	cases = rlang::list2(...)
+	result = xs
+
+	for (case in cases) {
+		condition = rlang::eval_tidy(rlang::f_lhs(case))
+		value = rlang::f_rhs(case)
+		mask = if (length(condition) == 1) xs == condition else xs %in% condition
+		result[mask] = value
+	}
+
+	result
+}
+
+
 transfer = function(...) UseMethod("transfer")
-#' @export
 transfer.list = function(var, ...) map(var, \(x) case_match(x, ...) |> mrcheck())
-#' @export
 transfer.default = function(var, ...) case_match(var, ...)
 
 #' @export
@@ -314,35 +330,22 @@ DS$set("public", "autocode_single", function(...) {
 
 
 
-#' @export
-flip_scale = function(var, ...) {
-	ids = c(...)
-
-	from_index = match(ids, ds$val_labels[[var]])
-	to_index = rev(from_index)
-
-	if(length(from_index) == 0) stop("Specified values not found in the vector.")
-
-	names(ds$val_labels[[var]])[from_index] = names(ds$val_labels[[var]])[to_index]
-
-	fs = sprintf("%s ~ %s", ids, rev(ids)) |> map(\(x) as.formula(x))
-
-	ds$recode({{ var }}, !!!fs)
-}
-
+# usage ds$flip_scale(base_name("Z6C1"), 1:5)
 DS$set("public", "flip_scale", function(vars, ...) {
-	ids = c(...)
+	arg_ids = c(...)
 
 	for (var in self$names({{ vars }})) {
+		ids = if (length(arg_ids) == 0) self$val_labels[[var]] |> unname() else arg_ids
+
 		from_index = match(ids, ds$val_labels[[var]])
 		to_index = rev(from_index)
 
 		if(length(from_index) == 0) stop("Specified values not found in the vector.")
 
-		names(ds$val_labels[[var]])[from_index] = names(ds$val_labels[[var]])[to_index]
-	}
+		names(self$val_labels[[var]])[from_index] = names(self$val_labels[[var]])[to_index]
 
-	self$recode({{ vars }}, !!!sprintf("%s ~ %s", ids, rev(ids)) |> map(\(x) as.formula(x)))
+		self$recode({{ var }}, !!!map(sprintf("%s ~ %s", ids, rev(ids)), as.formula))
+	}
 })
 
 
