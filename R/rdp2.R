@@ -179,27 +179,6 @@ DS$set("public", "remove", function(...) {
 	self$val_labels = self$val_labels[setdiff(names(self$val_labels), var_names)]
 })
 
-# DS$set("public", "rename", function(from, to) {
-# 	if (!(from %in% self$variables)) stop(sprintf("%s not found", from))
-# 	if (to %in% self$variables) stop(sprintf("%s already exists", to))
-#
-# 	names(self$data)[names(self$data) == from] = to
-# 	if (from %in% names(self$var_labels)) names(self$var_labels)[names(self$var_labels) == from] = to
-# 	if (from %in% names(self$val_labels)) names(self$val_labels)[names(self$val_labels) == from] = to
-# })
-
-# rename_labels <- function(label_list, names_from, names_to) {
-# 	cur_names <- names(label_list)
-# 	present_names <- names_from %in% cur_names
-# 	filtered_names_from <- names_from[present_names]
-# 	filtered_names_to <- names_to[present_names]
-#
-# 	new_names_order <- match(cur_names[cur_names %in% filtered_names_from], filtered_names_from)
-# 	names(label_list)[cur_names %in% filtered_names_from] <- filtered_names_to[new_names_order]
-# }
-#
-# rename_labels(self$var_labels, names_from, names_to)
-# rename_labels(self$val_labels, names_from, names_to)
 
 DS$set("public", "rename", function(names_from, names_to) {
 	cur_names = self$variables
@@ -216,21 +195,20 @@ DS$set("public", "rename", function(names_from, names_to) {
 	new_names_order = match(cur_names[cur_names %in% names_from], names_from)
 	names(self$data)[cur_names %in% names_from] = names_to[new_names_order]
 
-	cur_names = names(self$var_labels)
-	present_names = names_from %in% cur_names
-	filtered_names_from = names_from[present_names]
-	filtered_names_to = names_to[present_names]
+	calc_renames = function(xs) {
+		cur_names = names(xs)
+		present_names = names_from %in% cur_names
+		filtered_names_from = names_from[present_names]
+		filtered_names_to = names_to[present_names]
+		new_names_order = match(cur_names[cur_names %in% filtered_names_from], filtered_names_from)
+		list(new_names = filtered_names_to[new_names_order], cur_names_mask = cur_names %in% filtered_names_from)
+	}
 
-	new_names_order = match(cur_names[cur_names %in% filtered_names_from], filtered_names_from)
-	names(self$var_labels)[cur_names %in% filtered_names_from] = filtered_names_to[new_names_order]
+	renames = calc_renames(self$var_labels)
+	names(self$var_labels)[renames$cur_names_mask] = renames$new_names
 
-	cur_names = names(self$val_labels)
-	present_names = names_from %in% cur_names
-	filtered_names_from = names_from[present_names]
-	filtered_names_to = names_to[present_names]
-
-	new_names_order = match(cur_names[cur_names %in% filtered_names_from], filtered_names_from)
-	names(self$val_labels)[cur_names %in% filtered_names_from] = filtered_names_to[new_names_order]
+	renames = calc_renames(self$val_labels)
+	names(self$val_labels)[renames$cur_names_mask] = renames$new_names
 })
 
 DS$set("public", "move", function(..., after = NULL, before = NULL) {

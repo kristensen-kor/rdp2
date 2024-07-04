@@ -151,16 +151,9 @@ calc_sigs_wave = function(res, rows, cols) {
 }
 
 gen_free_name = function(xs, name) {
-	if (!name %in% xs) {
-		name
-	} else {
-		i = 2
-
-		while (paste0(name, i) %in% xs) {
-			i = i + 1
-		}
-
-		paste0(name, i)
+	while (T) {
+		if (!(name %in% xs)) return(name)
+		name = paste0(name, "0")
 	}
 }
 
@@ -186,10 +179,13 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 
 	tds = self$clone()
 
-	# rewrite to "please provide total, since existing total varaible is invalid"
 	if (is.null(col_vars)) {
-		col_vars = gen_free_name(tds$variables, "total")
-		tds$nvn(col_vars, "Total", c("Total" = 1), fill = 1)
+		if ("total" %in% tds$variables) {
+			if (tds$var_labels$total != "Total" || tds$val_labels$total != c("Total" = 1) || !all(tds$data$total == 1)) stop("Cannot use existing total variable")
+		} else {
+			tds$add_total()
+		}
+		col_vars = "total"
 	}
 
 	if (is.null(weight)) {
@@ -201,7 +197,7 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 		col_vars,
 		waves,
 		weight,
-		row_vars |> discard(is.list) |> as.character(),
+		row_vars |> discard(is.list) |> unlist(),
 		row_vars |> keep(is.list) |> map("vars") |> unlist(),
 		row_vars |> keep(is.list) |> keep(\(x) "filter_var" %in% names(x)) |> map_chr("filter_var")
 	)
