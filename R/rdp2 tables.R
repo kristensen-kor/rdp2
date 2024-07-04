@@ -1,10 +1,16 @@
 #' @include rdp2.R
 
-# add block frames
+# add block frames?
+
+#' @export
+rows_block = function(caption = NULL, vars = NULL, filter_var = NULL, filter_value = NULL) {
+	list(caption = caption, vars = vars, filter_var = filter_var, filter_value = filter_value) |> discard(is.null)
+}
 
 #' @export
 table_block = function(caption = NULL, vars = NULL, filter_var = NULL, filter_value = NULL) {
-	list(caption = caption, vars = vars, filter_var = filter_var, filter_value = filter_value) |> discard(is.null)
+	cat("table_block() is deprecated, please use rows_block() instead.")
+	rows_block(caption, vars, filter_var, filter_value)
 }
 
 DS$set("public", "prepare_val_labels", function(var, warning = F) {
@@ -173,7 +179,9 @@ calc_rows_simple = function(vec, weights, row_values = NULL) {
 
 # add filter?
 # add excel export?
-DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL, sig = "first", sheet = "", waves = NULL) {
+# change sheet = "" to sheet = NULL
+# how to treat duplicates in columns?
+DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", sheet = "", filename = NULL) {
 	start_time = Sys.time()
 	on.exit(cat("Calculating table", sheet, ":", elapsed_fmt(Sys.time() - start_time), "\n"))
 
@@ -374,7 +382,14 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 	rows_tibble = rows_tibble[filter_out_stddev, ]
 	# rows_tibble = rows_tibble |> filter(type != "stddev")
 
-	invisible(list(res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs, sheet_name = sheet))
+	if (!is.null(filename)) {
+		table = list(res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs)
+		xls = XL$new(filename)
+		if (sheet == "") xls$add(table) else xls$add(sheet, table)
+		xls$write()
+	}
+
+	invisible(list(type = "ctable", res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs, sheet_name = sheet, filename = filename))
 })
 
 

@@ -37,6 +37,8 @@ XL_add = function(self, sheet, table) {
 	start_time = Sys.time()
 	on.exit(cat(paste0("Added ", sheet, ":"), elapsed_fmt(Sys.time() - start_time), "\n"))
 
+	if (!is.null(table$filename)) stop("Can't add table with filename")
+
 	if (!(sheet %in% self$sheets)) {
 		addWorksheet(self$wb, sheet)
 		self$sheets = c(self$sheets, sheet)
