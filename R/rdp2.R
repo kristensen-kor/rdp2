@@ -188,6 +188,19 @@ DS$set("public", "remove", function(...) {
 # 	if (from %in% names(self$val_labels)) names(self$val_labels)[names(self$val_labels) == from] = to
 # })
 
+# rename_labels <- function(label_list, names_from, names_to) {
+# 	cur_names <- names(label_list)
+# 	present_names <- names_from %in% cur_names
+# 	filtered_names_from <- names_from[present_names]
+# 	filtered_names_to <- names_to[present_names]
+#
+# 	new_names_order <- match(cur_names[cur_names %in% filtered_names_from], filtered_names_from)
+# 	names(label_list)[cur_names %in% filtered_names_from] <- filtered_names_to[new_names_order]
+# }
+#
+# rename_labels(self$var_labels, names_from, names_to)
+# rename_labels(self$val_labels, names_from, names_to)
+
 DS$set("public", "rename", function(names_from, names_to) {
 	cur_names = self$variables
 

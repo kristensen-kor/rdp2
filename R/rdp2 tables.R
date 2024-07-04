@@ -186,6 +186,7 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 
 	tds = self$clone()
 
+	# rewrite to "please provide total, since existing total varaible is invalid"
 	if (is.null(col_vars)) {
 		col_vars = gen_free_name(tds$variables, "total")
 		tds$nvn(col_vars, "Total", c("Total" = 1), fill = 1)
@@ -402,7 +403,6 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	# 	rows = rows[-1, , drop = F]
 	# }
 
-	addWorksheet(wb, sheetName = sheet)
 
 
 
@@ -605,6 +605,7 @@ excel_tables = function(..., filename, no_contents = F, options_format = "num") 
 		\(x, sheet) {
 			start_time_2 = Sys.time()
 			on.exit(cat("Exporting", sheet, ":", elapsed_fmt(Sys.time() - start_time_2), "\n"))
+			addWorksheet(wb, sheet)
 			form_sheet(wb, x, sheet, options_format = options_format)
 		}
 	)
