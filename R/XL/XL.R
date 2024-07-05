@@ -87,18 +87,22 @@ XL_add_contents = function(self) {
 	activeSheet(self$wb) = contents_sheet
 }
 
+XL$set("public", "add_contents", \() XL_add_contents(self))
 
-XL_write = function(self, add_contents) {
+
+XL_write = function(self) {
 	start_time = Sys.time()
 	on.exit(cat(self$filename, "writing time:", elapsed_fmt(Sys.time() - start_time), "\n"))
-
-	if (add_contents) XL_add_contents(self)
 
 	saveWorkbook(self$wb, self$filename, overwrite = T)
 }
 
-XL$set("public", "write", \(add_contents = F) XL_write(self, add_contents))
-XL$set("public", "write_wc", \() XL_write(self, add_contents = T))
+XL$set("public", "write", \() XL_write(self))
+
+XL$set("public", "add_contents_and_write", function() {
+	self$add_contents()
+	self$write()
+})
 
 
 

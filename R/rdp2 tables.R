@@ -9,7 +9,7 @@ rows_block = function(caption = NULL, vars = NULL, filter_var = NULL, filter_val
 
 #' @export
 table_block = function(caption = NULL, vars = NULL, filter_var = NULL, filter_value = NULL) {
-	cat("table_block() is deprecated, please use rows_block() instead.")
+	cat("table_block() is deprecated, please use rows_block() instead.\n")
 	rows_block(caption, vars, filter_var, filter_value)
 }
 
