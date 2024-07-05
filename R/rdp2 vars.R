@@ -74,10 +74,8 @@ DS$set("public", "nvn", function(name, label = NULL, labels = NULL, fill = NA, a
 	private$nv_generic(name, label, labels, fill, after, before, "single")
 })
 
-
-
 DS$set("public", "nvs", function(name, label = NULL, fill = NA, after = NULL, before = NULL) {
-	private$nv_generic(name, label, NULL, fill, after, before, "single")
+	private$nv_generic(name, label, labels = NULL, fill, after, before, "single")
 })
 
 DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL, before = NULL) {
@@ -134,7 +132,7 @@ DS$set("public", "transfer_to", function(new_vars, from_vars, ...) {
 DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after = NULL) {
 	self$data = self$data |> mutate("{ new_var }" := .data[[from_var]], .after = {{ after }})
 
-	self$var_labels[[new_var]] = if (!is.null(label)) label else self$var_labels[[from_var]]
+	self$var_labels[[new_var]] = label %||% self$var_labels[[from_var]]
 	self$val_labels[[new_var]] = self$val_labels[[from_var]]
 })
 

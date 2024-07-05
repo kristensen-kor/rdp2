@@ -157,7 +157,7 @@ calc_sigs_wave = function(res, rows, cols) {
 }
 
 gen_free_name = function(xs, name) {
-	while (T) {
+	repeat {
 		if (!(name %in% xs)) return(name)
 		name = paste0(name, "0")
 	}
@@ -385,7 +385,7 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 	if (!is.null(filename)) {
 		table = list(res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs)
 		xls = XL$new(filename)
-		if (sheet == "") xls$add(table) else xls$add(sheet, table)
+		xls$add(table)
 		xls$write()
 	}
 
