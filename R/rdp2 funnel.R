@@ -33,7 +33,7 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NUL
 		res_table = res_table |> mutate("{ col_name }" := conv, .after = vars[i])
 	}
 
-	res = list(vars = vars, labels = self$get_var_labels(all_of(vars)), res_table = res_table, base = bases[1], sheet = sheet)
+	res = list(type = "funnel", vars = vars, labels = self$get_var_labels(all_of(vars)), res_table = res_table, base = bases[1], sheet = sheet)
 
 	if (!is.null(filename)) self$funnel_tables(res, filename = filename)
 
@@ -41,8 +41,6 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NUL
 })
 
 add_funnel_sheet = function(wb, sheet, vars, labels, res_table, base) {
-	addWorksheet(wb, sheetName = sheet)
-
 	ids1 = seq_along(vars) * 2 - 1
 	ids2 = seq_along(vars[-1]) * 2
 
@@ -106,6 +104,8 @@ add_funnel_sheet = function(wb, sheet, vars, labels, res_table, base) {
 	writeData(wb, sheet = sheet, xy = c(1, nrow(res_table) + 6), x = "n =")
 	addStyle(wb, sheet = sheet, createStyle(halign = "right", numFmt = "0"), rows = nrow(res_table) + 6, cols = 2)
 	writeData(wb, sheet = sheet, xy = c(2, nrow(res_table) + 6), x = base)
+
+	list(row = 1, text = "Conversion")
 }
 
 DS$set("public", "funnel_tables", function(..., filename = NULL) {
@@ -120,7 +120,10 @@ DS$set("public", "funnel_tables", function(..., filename = NULL) {
 	sheets = map_chr(data, \(x) x$sheet)
 	sheets = ifelse(sheets == "", paste0("Sheet", seq_along(sheets)), sheets)
 
-	walk2(data, sheets, \(x, sheet) add_funnel_sheet(wb, sheet, x$vars, x$labels, x$res_table, x$base))
+	walk2(data, sheets, \(x, sheet) {
+		addWorksheet(wb, sheet)
+		add_funnel_sheet(wb, sheet, x$vars, x$labels, x$res_table, x$base)
+	})
 
 	saveWorkbook(wb, filename, overwrite = T)
 })

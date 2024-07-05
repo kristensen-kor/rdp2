@@ -44,7 +44,13 @@ XL_add = function(self, sheet, table) {
 		self$sheets = c(self$sheets, sheet)
 	}
 
-	self$links[[sheet]] = form_sheet(self$wb, table, sheet, options_format = self$options_format)
+	if (table$type == "ctable") {
+		self$links[[sheet]] = form_sheet(self$wb, table, sheet, options_format = self$options_format)
+	} else if (table$type == "funnel") {
+		self$links[[sheet]] = add_funnel_sheet(self$wb, sheet, table$vars, table$labels, table$res_table, table$base)
+	} else {
+		stop("Unrecognized table format")
+	}
 }
 
 XL$set("public", "add", \(sheet, table = NULL) XL_add(self, sheet, table))
