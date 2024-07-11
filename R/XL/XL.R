@@ -112,6 +112,15 @@ XL$set("public", "add_contents_and_write", function() {
 
 
 
+# wrapper for simple one table exports
+qexport = function(table, filename = NULL) {
+	if (is.null(filename)) stop("filename is required.")
+
+	xls = XL$new(filename)
+	xls$add(table)
+	xls$write()
+}
+
 
 # xls = ExcelTable$new("11299-2 tables waves 2024-07-01 v6")
 # # xls$options(fmt = "pct")
