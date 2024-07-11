@@ -57,9 +57,6 @@ XL$set("public", "add", \(sheet, table = NULL) XL_add(self, sheet, table))
 
 
 XL_add_contents = function(self) {
-	start_time = Sys.time()
-	on.exit(cat("Contents time:", elapsed_fmt(Sys.time() - start_time), "\n"))
-
 	contents_sheet = length(self$sheets) + 1
 
 	addWorksheet(self$wb, sheetName = "Contents")
