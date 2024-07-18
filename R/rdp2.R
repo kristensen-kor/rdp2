@@ -328,16 +328,59 @@ DS$set("public", "flip_scale", function(vars, ...) {
 	for (var in self$names({{ vars }})) {
 		ids = if (length(arg_ids) == 0) self$val_labels[[var]] |> unname() else arg_ids
 
-		from_index = match(ids, ds$val_labels[[var]])
+		from_index = match(ids, self$val_labels[[var]])
 		to_index = rev(from_index)
 
-		if(length(from_index) == 0) stop("Specified values not found in the vector.")
+		if (length(from_index) == 0) stop("Specified values not found in the vector.")
 
 		names(self$val_labels[[var]])[from_index] = names(self$val_labels[[var]])[to_index]
 
 		self$recode({{ var }}, !!!map(sprintf("%s ~ %s", ids, rev(ids)), as.formula))
 	}
 })
+
+DS$set("public", "scale_dense", function(vars) {
+	for (var in self$names({{ vars }})) {
+		if (!(var %in% names(self$val_labels))) stop("Non-categorical variable")
+
+		ids = self$val_labels[[var]] |> unname()
+		self$val_labels[[var]] = setNames(seq_along(ids), names(self$val_labels[[var]]))
+
+
+		recode_simple = function(xs, ids) {
+			result = xs
+
+			for (i in seq_along(ids)) {
+				result[xs == ids[i]] = i
+			}
+
+			result
+		}
+
+		if (is_multiple(self$data[[var]])) {
+			self$data[[var]] = self$data[[var]] |> map(\(x) recode_simple(x, ids) |> mrcheck())
+		} else {
+			self$data[[var]] = recode_simple(self$data[[var]], ids)
+		}
+	}
+})
+
+
+DS$set("public", "scale_shift", function(vars, from, amount = 1) {
+	for (var in self$names({{ vars }})) {
+		mask = self$val_labels[[var]] >= from
+		self$val_labels[[var]][mask] = self$val_labels[[var]][mask] + amount
+
+		if (is_multiple(self$data[[var]])) {
+			self$data[[var]] = self$data[[var]] |> map(\(x) ifelse(x >= from, x + amount, x))
+		} else {
+			mask = self$data[[var]] >= from
+			self$data[[var]][mask] = self$data[[var]][mask] + amount
+		}
+	}
+})
+
+
 
 
 DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index_values = NULL, index_labels = NULL) {

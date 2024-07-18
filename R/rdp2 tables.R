@@ -382,14 +382,18 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 	rows_tibble = rows_tibble[filter_out_stddev, ]
 	# rows_tibble = rows_tibble |> filter(type != "stddev")
 
+	table = list(type = "ctable", res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs, sheet_name = sheet, filename = filename)
+
 	if (!is.null(filename)) {
-		table = list(res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs)
+		temp_table = table
+		temp_table$filename = NULL
+
 		xls = XL$new(filename)
-		xls$add(table)
+		xls$add(temp_table)
 		xls$write()
 	}
 
-	invisible(list(type = "ctable", res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs, sheet_name = sheet, filename = filename))
+	invisible(table)
 })
 
 
