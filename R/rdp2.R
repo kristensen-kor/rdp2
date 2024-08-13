@@ -299,7 +299,7 @@ bitcount = function(var, ...) {
 }
 
 
-DS$set("public", "autocode_single", function(...) {
+DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 	vars = self$names(...)
 
 	for (var_name in vars) {
@@ -311,18 +311,36 @@ DS$set("public", "autocode_single", function(...) {
 			vec = formatC(vec, format = "f", big.mark = "", drop0trailing = T)
 			values = formatC(values, format = "f", big.mark = "", drop0trailing = T)
 		} else {
-			values = vec[vec != ""] |> unique() |> sort()
+			if (is.null(labels)) {
+				values = vec[vec != ""] |> unique() |> sort()
+			} else {
+				# if (is.character(labels)) labels = conv_to_labels(labels)
+				# values = names(labels)
+
+				values = labels
+			}
+
+			not_found = vec[!(vec %in% values)] |> unique()
+			if (length(not_found) > 0) {
+				cat(var_name, "values not from the list:\n")
+				cat(paste(not_found, collapse = "\n"), "\n")
+			}
 		}
 
-		self$data[[var_name]] = match(vec, values) |> as.double()
-		self$set_val_labels(!!sym(var_name), setNames(seq_along(values), values))
+		self$data[[var_name]] = match(vec, values, nomatch = nomatch) |> as.double()
+		self$set_val_labels(all_of(var_name), setNames(seq_along(values), values))
 	}
 })
 
 
 
-# usage ds$flip_scale(base_name("Z6C1"), 1:5)
 DS$set("public", "flip_scale", function(vars, ...) {
+	warning("$flip_scale() is deprecated. Please use $scale_flip() instead", call. = F)
+	self$scale_flip(vars, ...)
+})
+
+# usage ds$scale_flip(base_name("Z6C1"), 1:5)
+DS$set("public", "scale_flip", function(vars, ...) {
 	arg_ids = c(...)
 
 	for (var in self$names({{ vars }})) {
@@ -338,6 +356,7 @@ DS$set("public", "flip_scale", function(vars, ...) {
 		self$recode({{ var }}, !!!map(sprintf("%s ~ %s", ids, rev(ids)), as.formula))
 	}
 })
+
 
 DS$set("public", "scale_dense", function(vars) {
 	for (var in self$names({{ vars }})) {
