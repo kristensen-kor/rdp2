@@ -100,6 +100,12 @@ DS$set("public", "open_import", function(path, sheets = NULL, after = NULL) {
 		data = sheet_data[(data_start + 1):nrow(sheet_data), ] |> as_tibble()
 		colnames(data) = header
 
+		all_codes = data |> select(starts_with("codes")) |> unlist()
+		all_codes = all_codes[all_codes != ""]
+		all_codes = ifelse(is.na(as.numeric(all_codes)), all_codes, NA)
+		all_codes = all_codes[!is.na(all_codes)]
+		if (length(all_codes) > 0) stop(paste(sheet, "Non-valid codes found:", paste0(all_codes, collapse = ", ")))
+
 		data = data |> mutate(across(starts_with("codes"), as.numeric)) |> select(where(\(x) !all(is.na(x))))
 
 		#add param for char id

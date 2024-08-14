@@ -4,7 +4,16 @@
 
 
 #' @export
-base_name = function(xs) matches(sprintf("^%s_\\d+$", xs))
+base_name = function(xs) {
+	warning("base_name() is deprecated. Please use base() instead", call. = F)
+	matches(sprintf("^%s_\\d+$", xs))
+}
+# base_name = function(xs) matches(sprintf("^%s_\\d+$", xs))
+
+#' @export
+base = function(xs) matches(sprintf("^%s_\\d+$", xs))
+
+
 
 #' @export
 is_multiple = is.list
@@ -155,6 +164,9 @@ DS$set("public", "get_col_names", \(...) {
 })
 
 DS$set("public", "names", \(...) self$data |> select(...) |> names())
+
+DS$set("public", "base_name", \(xs) self$names(base(xs)))
+
 
 
 DS$set("public", "vacuum", function() {
