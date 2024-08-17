@@ -12,7 +12,7 @@ DS$set("public", "export_spss", function(sav_name, sps_name, CP1251 = F) {
 	single_vars = setdiff(self$variables, c(multiples, string_vars))
 
 	for (var_name in multiples) {
-		var_names = self$names(base_name(var_name))
+		var_names = self$base_name(var_name)
 		if (length(var_names) > 0) stop(paste0(paste0(var_names, collapse = ", "), " names conflict"))
 	}
 
