@@ -20,15 +20,15 @@ DS$set("public", "vars_transpose", function(vars, new_name, label_prefix, na_cod
 
 	values_from |> iwalk(\(value, name) self$nvm(paste_vars(new_name, value), paste0(label_prefix, name), labels))
 
-	walk2(self$names(base_name(new_name)), values_from, \(var_name, value) {
+	walk2(self$base_name(new_name), values_from, \(var_name, value) {
 		self$data[[var_name]] = do.call(rbind, map2(vars, ids_from, \(var_from, id) {
 			ifelse(has(self$data[[var_from]], value), id, NA)
 		})) |> as.data.frame() |> as.list() |> lapply(\(x) x[!is.na(x)]) |> unname()
 	})
 
-	self$recode_empty(base_name(new_name), na_code, "None of the above")
+	self$recode_empty(base(new_name), na_code, "None of the above")
 
-	self$move(base_name(new_name), after = all_of(vars))
+	self$move(base(new_name), after = all_of(vars))
 
 	self$remove(all_of(vars))
 })

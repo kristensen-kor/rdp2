@@ -222,6 +222,10 @@ DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NU
 	if (length(list(...)) > 0 && !else_copy) self$transfer(all_of(new_vars), ...)
 })
 
+DS$set("public", "make_t2b", function(vars, ..., suffix = "T2B", label_suffix = "(T2B)", labels = NULL, move = T, suffix_position = "auto", else_copy = F) {
+	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, move = move, suffix_position = suffix_position, else_copy = else_copy)
+})
+
 DS$set("public", "make_means", function(vars, ..., suffix = "MEAN", label_suffix = "(MEAN)", move = T, suffix_position = "auto", vdiscard = NULL, else_copy = F) {
 	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, move = move, suffix_position = suffix_position, else_copy = else_copy)
 
