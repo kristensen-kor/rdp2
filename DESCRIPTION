@@ -19,6 +19,7 @@ Collate:
     'rdp2 export_spss.R'
     'rdp2 funnel.R'
     'rdp2 has.R'
+    'rdp2 open.R'
     'rdp2 qtable.R'
     'rdp2 tables internal.R'
     'rdp2 tables.R'

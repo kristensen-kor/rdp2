@@ -347,8 +347,7 @@ DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 
 
 DS$set("public", "flip_scale", function(vars, ...) {
-	warning("$flip_scale() is deprecated. Please use $scale_flip() instead", call. = F)
-	self$scale_flip(vars, ...)
+	stop("$flip_scale() is deprecated. Please use $scale_flip() instead", call. = F)
 })
 
 # usage ds$scale_flip(base_name("Z6C1"), 1:5)
