@@ -64,6 +64,7 @@ XL_add_append = function(self, sheet, table, place, margin) {
 	on.exit(cat(paste0("Added ", sheet, ":"), elapsed_fmt(Sys.time() - start_time), "\n"))
 
 	if (!is.null(table$filename)) stop("Can't add table with filename")
+	if (table$type == "ctable") stop("$add_right() and $add_below are not supported for ctables")
 
 	if (!(sheet %in% self$sheets)) {
 		addWorksheet(self$wb, sheet)

@@ -121,7 +121,7 @@ add_funnel_sheet = function(wb, sheet, data, caption, coords = NULL, place = NUL
 	addStyle(wb, sheet = sheet, createStyle(textDecoration = "bold"), rows = 1 + rows_pad - 1, cols = 2 + cols_pad)
 	addStyle(wb, sheet = sheet, createStyle(fgFill = "#EFEFEC", border = "Bottom"), rows = 1 + rows_pad - 1, cols = 1:ncol(res_table) + cols_pad, gridExpand = T, stack = T)
 	caption = paste("Conversion", caption %||% sheet, sep = "|")
-	writeData(wb, sheet = sheet, xy = c(2 + cols_pad, 1 + rows_pad - 1), x = paste("Conversion", caption %||% sheet, sep = "|"))
+	writeData(wb, sheet = sheet, xy = c(2 + cols_pad, 1 + rows_pad - 1), x = caption)
 
 	list(coords = list(bottom = nrow(res_table) + 6 + rows_pad, right = ncol(res_table) + cols_pad), links = list(list(row = 1 + rows_pad - 1, col = 1 + cols_pad, text = caption)))
 }
