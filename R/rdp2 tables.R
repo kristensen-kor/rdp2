@@ -591,10 +591,10 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 
 	idx = which(!is.na(rows$var))
 
-	list(
+	tibble(
 		row = idx + cols_pad,
 		text = paste0(rows[idx, ]$var, "|", rows[idx, ]$val_label)
-	)
+	) |> transpose()
 }
 
 #' @export

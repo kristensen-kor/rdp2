@@ -9,6 +9,7 @@ XL = R6::R6Class("XL", list(
 	wb = NULL,
 	sheets = character(),
 	links = list(),
+	coords = list(),
 	options_format = "num"
 ))
 
@@ -47,13 +48,42 @@ XL_add = function(self, sheet, table) {
 	if (table$type == "ctable") {
 		self$links[[sheet]] = form_sheet(self$wb, table, sheet, options_format = self$options_format)
 	} else if (table$type == "funnel") {
-		self$links[[sheet]] = add_funnel_sheet(self$wb, sheet, table$vars, table$labels, table$res_table, table$base)
+		res = add_funnel_sheet(self$wb, sheet, table)
+		self$links[[sheet]] = c(self$links[[sheet]], res$links)
+		self$coords[[sheet]] = res$coords
 	} else {
 		stop("Unrecognized table format")
 	}
 }
 
 XL$set("public", "add", \(sheet, table = NULL) XL_add(self, sheet, table))
+
+
+XL_add_append = function(self, sheet, table, place, margin) {
+	start_time = Sys.time()
+	on.exit(cat(paste0("Added ", sheet, ":"), elapsed_fmt(Sys.time() - start_time), "\n"))
+
+	if (!is.null(table$filename)) stop("Can't add table with filename")
+
+	if (!(sheet %in% self$sheets)) {
+		addWorksheet(self$wb, sheet)
+		self$sheets = c(self$sheets, sheet)
+	}
+
+	if (table$type == "ctable") {
+		res = form_sheet(self$wb, table, sheet, options_format = self$options_format)
+		if (!(sheet %in% self$links)) self$links[[sheet]] = res$links
+	} else if (table$type == "funnel") {
+		res = add_funnel_sheet(self$wb, sheet, table, table$caption, coords = self$coords[[sheet]], place = place, margin = margin)
+		self$links[[sheet]] = c(self$links[[sheet]], res$links)
+		self$coords[[sheet]] = res$coords
+	} else {
+		stop("Unrecognized table format")
+	}
+}
+
+XL$set("public", "add_right", \(sheet, table, margin = 1) XL_add_append(self, sheet, table, place = "right", margin))
+XL$set("public", "add_below", \(sheet, table, margin = 1) XL_add_append(self, sheet, table, place = "below", margin))
 
 
 XL_add_contents = function(self) {
@@ -63,7 +93,7 @@ XL_add_contents = function(self) {
 
 	writeData(self$wb, sheet = contents_sheet, xy = c(1, 1), x = "Contents")
 
-	nrows = c(0, map_dbl(self$links, \(x) length(x$row)) |> cumsum())
+	nrows = c(0, map_dbl(self$links, \(x) length(x)) |> cumsum())
 
 	formulas = map_chr(seq_along(self$links), \(i) {
 		makeHyperlinkString(
@@ -74,16 +104,16 @@ XL_add_contents = function(self) {
 
 	writeFormula(self$wb, sheet = contents_sheet, xy = c(1, 3), x = formulas)
 
-	seq_along(self$links) |> walk(\(i) {
-		formulas = map2_chr(self$links[[i]]$row, self$links[[i]]$text, \(row, text) {
+	seq_along(self$links) |> walk(\(sheet) {
+		formulas = map_chr(self$links[[sheet]], \(link) {
 			makeHyperlinkString(
-				sheet = self$sheets[[i]], row = row, col = 1,
-				text = gsub('"', '""', text, fixed = TRUE)
+				sheet = self$sheets[[sheet]], row = link$row, col = link$col %||% 1,
+				text = gsub('"', '""', link$text, fixed = TRUE)
 			)
 		})
-		sheet_link = makeHyperlinkString(sheet = self$sheets[[i]], row = 1, col = 1, text = self$sheets[[i]])
-		writeFormula(self$wb, sheet = contents_sheet, xy = c(1, 4 + length(self$links) + nrows[[i]] + i * 2 - 2), x = sheet_link)
-		writeFormula(self$wb, sheet = contents_sheet, xy = c(2, 5 + length(self$links) + nrows[[i]] + i * 2 - 2), x = formulas)
+		sheet_link = makeHyperlinkString(sheet = self$sheets[[sheet]], row = 1, col = 1, text = self$sheets[[sheet]])
+		writeFormula(self$wb, sheet = contents_sheet, xy = c(1, 4 + length(self$links) + nrows[[sheet]] + sheet * 2 - 2), x = sheet_link)
+		writeFormula(self$wb, sheet = contents_sheet, xy = c(2, 5 + length(self$links) + nrows[[sheet]] + sheet * 2 - 2), x = formulas)
 	})
 
 	worksheetOrder(self$wb) = c(contents_sheet, seq_len(length(self$sheets)))
