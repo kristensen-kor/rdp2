@@ -38,9 +38,18 @@ add_to_mrset = function(vec, value) {
 }
 # add_to_mrset = function(var, value) c(var, value) |> mrcheck()
 
+
+#' @export
 is_valid = function(...) UseMethod("is_valid")
+
+#' @export
+#' @method is_valid list
 is_valid.list = function(xs) lengths(xs) > 0
+
+#' @export
+#' @method is_valid default
 is_valid.default = function(xs) !is.na(xs)
+
 
 # recode = function(...) UseMethod("recode")
 # recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
@@ -166,6 +175,10 @@ DS$set("public", "get_col_names", \(...) {
 DS$set("public", "names", \(...) self$data |> select(...) |> names())
 
 DS$set("public", "base_name", \(xs) self$names(base(xs)))
+
+
+DS$set("public", "filter", \(...) self$data = self$data |> filter(...))
+
 
 
 
