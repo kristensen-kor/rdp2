@@ -1,3 +1,5 @@
+#' @include rdp2.R
+
 #' XL Class
 #'
 #' A class to manage Excel files.
@@ -48,7 +50,7 @@ XL_add = function(self, sheet, table) {
 	if (table$type == "ctable") {
 		self$links[[sheet]] = form_sheet(self$wb, table, sheet, options_format = self$options_format)
 	} else if (table$type == "funnel") {
-		res = add_funnel_sheet(self$wb, sheet, table)
+		res = add_funnel_sheet(self$wb, sheet, table, table$caption)
 		self$links[[sheet]] = c(self$links[[sheet]], res$links)
 		self$coords[[sheet]] = res$coords
 	} else {

@@ -181,7 +181,7 @@ calc_rows_simple = function(vec, weights, row_values = NULL) {
 # add excel export?
 # change sheet = "" to sheet = NULL
 # how to treat duplicates in columns?
-DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", sheet = "", filename = NULL) {
+DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", sheet = "", filename = NULL, open = F) {
 	start_time = Sys.time()
 	on.exit(cat("Calculating table", sheet, ":", elapsed_fmt(Sys.time() - start_time), "\n"))
 
@@ -391,6 +391,7 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 		xls = XL$new(filename)
 		xls$add(temp_table)
 		xls$write()
+		if (open) shell.exec(filename)
 	}
 
 	invisible(table)

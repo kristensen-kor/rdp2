@@ -16,6 +16,7 @@ Imports:
     openxlsx
 Collate: 
     'rdp2.R'
+    'XL.R'
     'rdp2 export_spss.R'
     'rdp2 funnel.R'
     'rdp2 has.R'

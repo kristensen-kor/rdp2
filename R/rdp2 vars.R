@@ -34,7 +34,13 @@ DS$set("public", "transfer", function(vars, ...) {
 	}
 })
 
+
 DS$set("public", "recode_empty", function(cols, value, label = NULL) {
+	recode_empty = function(var, value) {
+		var[var_empty(var)] = value
+		var
+	}
+
 	self$data = self$data |> mutate(across({{ cols }}, \(var) recode_empty(var, value)))
 
 	if (!is.null(label)) self$add_labels({{ cols }}, setNames(value, label))
@@ -138,15 +144,19 @@ DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after =
 
 
 
-# to private?
-#' @export
-set_if_lgl = function(...) UseMethod("set_if_lgl")
-#' @export
-set_if_lgl.list = function(var, value, condition) modify_at(var, which(condition), \(x) mrcheck(value))
-#' @export
-set_if_lgl.default = function(var, value, condition) replace(var, condition, value)
+set_if_lgl = function(...) UseMethod(".set_if_lgl")
+.set_if_lgl.list = function(var, value, condition) modify_at(var, which(condition), \(x) mrcheck(value))
+.set_if_lgl.default = function(var, value, condition) replace(var, condition, value)
 
 DS$set("public", "set_if", function(var, value, ..., label = NULL) {
+	# condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
+	#
+	# self$data[[var]] = set_if_lgl(self$data[[var]], value, condition)
+
+	if (length(enquos(...)) > 1) {
+		stop("Multiple logical conditions are not supported. Please provide only one condition.", call. = F)
+	}
+
 	condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
 
 	self$data[[var]] = set_if_lgl(self$data[[var]], value, condition)
@@ -154,12 +164,17 @@ DS$set("public", "set_if", function(var, value, ..., label = NULL) {
 	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
 })
 
+
 DS$set("public", "set_na_if", function(var, ...) {
-	self$set_if(var, NA_real_, ...)
+	self$set_if(var, NA, ...)
 })
 
 DS$set("public", "add_if", function(var, value, ..., label = NULL) {
 	if (!is_multiple(self$data[[var]])) stop("Error: Expecting variable of multiple type.")
+
+	if (length(enquos(...)) > 1) {
+		stop("Multiple logical conditions are not supported. Please provide only one condition.", call. = F)
+	}
 
 	condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
 
@@ -223,6 +238,10 @@ DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NU
 })
 
 DS$set("public", "make_t2b", function(vars, ..., suffix = "T2B", label_suffix = "(T2B)", labels = NULL, move = T, suffix_position = "auto", else_copy = F) {
+	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, move = move, suffix_position = suffix_position, else_copy = else_copy)
+})
+
+DS$set("public", "make_t3b", function(vars, ..., suffix = "T3B", label_suffix = "(T3B)", labels = NULL, move = T, suffix_position = "auto", else_copy = F) {
 	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, move = move, suffix_position = suffix_position, else_copy = else_copy)
 })
 

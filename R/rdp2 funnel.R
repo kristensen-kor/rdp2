@@ -40,7 +40,7 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NUL
 	invisible(res)
 })
 
-add_funnel_sheet = function(wb, sheet, data, caption, coords = NULL, place = NULL, margin = -1) {
+add_funnel_sheet = function(wb, sheet, data, caption = NULL, coords = NULL, place = NULL, margin = -1) {
 	vars = data$vars
 	labels = data$labels
 	res_table = data$res_table

@@ -8,7 +8,6 @@ base_name = function(xs) {
 	warning("base_name() is deprecated. Please use base() instead", call. = F)
 	matches(sprintf("^%s_\\d+$", xs))
 }
-# base_name = function(xs) matches(sprintf("^%s_\\d+$", xs))
 
 #' @export
 base = function(xs) matches(sprintf("^%s_\\d+$", xs))
@@ -39,25 +38,42 @@ add_to_mrset = function(vec, value) {
 # add_to_mrset = function(var, value) c(var, value) |> mrcheck()
 
 
-#' @export
-is_valid = function(...) UseMethod("is_valid")
+# #' @export
+# is_valid = function(...) UseMethod("is_valid")
+#
+# #' @export
+# #' @method is_valid list
+# is_valid.list = function(xs) lengths(xs) > 0
+#
+# #' @export
+# #' @method is_valid default
+# is_valid.default = function(xs) !is.na(xs)
 
+.is_valid = function(...) UseMethod(".is_valid")
+.is_valid.list = function(xs) lengths(xs) > 0
+.is_valid.default = function(xs) !is.na(xs)
 #' @export
-#' @method is_valid list
-is_valid.list = function(xs) lengths(xs) > 0
+is_valid = function(xs) .is_valid(xs)
 
-#' @export
-#' @method is_valid default
-is_valid.default = function(xs) !is.na(xs)
+
+.var_empty = function(...) UseMethod(".var_empty")
+.var_empty.list = function(xs) lengths(xs) == 0
+.var_empty.default = function(xs) is.na(xs)
+
+var_empty = function(...) .var_empty(...)
+
 
 
 # recode = function(...) UseMethod("recode")
 # recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
 # recode.default = function(var, ...) case_match(var, ..., .default = var)
 
-recode = function(...) UseMethod("recode")
-recode.list = function(var, ...) map(var, \(x) case_match_vec_copy(x, ...) |> mrcheck())
-recode.default = function(var, ...) case_match_vec_copy(var, ...)
+.recode = function(...) UseMethod(".recode")
+.recode.list = function(var, ...) map(var, \(x) case_match_vec_copy(x, ...) |> mrcheck())
+.recode.default = function(var, ...) case_match_vec_copy(var, ...)
+#' @export
+recode = function(...) .recode(...)
+
 
 case_match_vec_copy = function(xs, ...) {
 	cases = rlang::list2(...)
@@ -74,22 +90,13 @@ case_match_vec_copy = function(xs, ...) {
 }
 
 
-transfer = function(...) UseMethod("transfer")
-transfer.list = function(var, ...) map(var, \(x) case_match(x, ...) |> mrcheck())
-transfer.default = function(var, ...) case_match(var, ...)
+.transfer = function(...) UseMethod(".transfer")
+.transfer.list = function(var, ...) map(var, \(x) case_match(x, ...) |> mrcheck())
+.transfer.default = function(var, ...) case_match(var, ...)
+#' @export
+transfer = function(...) .transfer(...)
 
-#' @export
-var_empty = function(...) UseMethod("var_empty")
-#' @export
-var_empty.list = function(var) lengths(var) == 0
-#' @export
-var_empty.default = function(var) is.na(var)
 
-#' @export
-recode_empty = function(var, value) {
-	var[!is_valid(var)] = value
-	var
-}
 
 #' @export
 elapsed_fmt = function(x) {
@@ -101,10 +108,8 @@ elapsed_fmt = function(x) {
 	}
 }
 
-# DS class
 
-# to do
-# print
+# DS class
 
 #' @export
 DS = R6::R6Class("DS", list(
@@ -423,6 +428,33 @@ DS$set("public", "scale_shift", function(vars, from, amount = 1) {
 	}
 })
 
+
+DS$set("public", "scale_move", function(vars, ...) {
+	values = rlang::list2(...)
+
+	for (value in values) {
+		lhs = rlang::eval_tidy(rlang::f_lhs(value))
+		rhs = rlang::eval_tidy(rlang::f_rhs(value))
+		if (length(lhs) != 1 || length(rhs) != 1) stop("Both sides of the '~' must be of length 1.", call. = F)
+
+		for (var in self$names({{ vars }})) {
+			if (rhs %in% unlist(self$data[[var]])) stop(var, " already has " , rhs, call. = F)
+			if (!(lhs %in% self$val_labels[[var]])) stop(var, " has no label for ", lhs, call. = F)
+		}
+	}
+
+	self$recode(vars, ...)
+
+	for (value in values) {
+		lhs = rlang::eval_tidy(rlang::f_lhs(value))
+		rhs = rlang::eval_tidy(rlang::f_rhs(value))
+
+		for (var in self$names({{ vars }})) {
+			self$add_labels({{ var }}, setNames(rhs, names(which(self$val_labels[[var]] == lhs))))
+		}
+		self$remove_labels(vars, lhs)
+	}
+})
 
 
 
