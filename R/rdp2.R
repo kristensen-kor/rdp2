@@ -149,6 +149,8 @@ DS$set("public", "save", function(filename) {
 })
 
 DS$set("public", "open", function(filename) {
+	if (!grepl("\\.[a-zA-Z0-9]+$", filename)) filename = paste0(filename, ".rds")
+
 	if (endsWith(tolower(filename), ".sav")) {
 		self$get_spss(filename)
 	} else if (endsWith(tolower(filename), ".rds")) {
