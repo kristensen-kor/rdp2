@@ -22,6 +22,7 @@ Collate:
     'rdp2 has.R'
     'rdp2 open.R'
     'rdp2 qtable.R'
+    'rdp2 scale.R'
     'rdp2 tables internal.R'
     'rdp2 tables.R'
     'rdp2 transpose.R'

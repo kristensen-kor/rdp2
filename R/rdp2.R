@@ -7,6 +7,9 @@ DS = R6::R6Class("DS", list(
 	val_labels = NULL
 ))
 
+
+# read/write
+
 DS$set("public", "get_spss", function(filename) {
 	start_time = Sys.time()
 	on.exit(cat("Read spss:", elapsed_fmt(Sys.time() - start_time), "\n"))
@@ -52,23 +55,15 @@ DS$set("public", "save", function(filename) {
 })
 
 
+# basic
+
 DS$set("active", "variables", \() names(self$data))
 
 DS$set("active", "nrow", \() nrow(self$data))
 
-
-
-DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA)
-
-DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(self$get_var_label))
-
-DS$set("public", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
-
-DS$set("public", "is_nominal", \(vars) (vars %in% names(self$val_labels)) | map_lgl(vars, \(var) is_multiple(self$data[[var]])))
-
 DS$set("public", "get_col_names", \(...) {
 	warning("$get_col_names() is deprecated. Please use $names() instead", call. = F)
-	self$data |> select(...) |> names()
+	self$names(...)
 })
 
 DS$set("public", "names", \(...) self$data |> select(...) |> names())
@@ -76,15 +71,33 @@ DS$set("public", "names", \(...) self$data |> select(...) |> names())
 DS$set("public", "base_name", \(xs) self$names(base(xs)))
 
 
-DS$set("public", "filter", \(...) self$data = self$data |> filter(...))
 
+# types
 
-
-
-DS$set("public", "vacuum", function() {
-	self$var_labels = self$var_labels[names(self$var_labels) %in% self$variables]
-	self$val_labels = self$val_labels[names(self$val_labels) %in% self$variables]
+DS$set("public", "var_type", function(...) {
+	map_chr(self$names(...), \(var) {
+		if (is.numeric(self$data[[var]]) && var %in% names(self$val_labels)) {
+			"single"
+		} else if (is_multiple(self$data[[var]])) {
+			"multiple"
+		} else if (is.numeric(self$data[[var]])) {
+			"numeric"
+		} else if (is.character(self$data[[var]])) {
+			"text"
+		} else {
+			warning("Variable does not match any expected type: ", var, call. = F)
+			NA_character_
+		}
+	})
 })
+
+DS$set("public", "is_nominal", \(vars) self$var_type(vars) %in% c("single", "multiple"))
+
+
+
+
+
+DS$set("public", "filter", \(...) self$data = self$data |> filter(...))
 
 DS$set("public", "keep", function(...) {
 	var_names = self$names(...)
@@ -97,7 +110,6 @@ DS$set("public", "keep", function(...) {
 DS$set("public", "remove", function(...) {
 	var_names = self$names(...)
 
-	# self$data = self$data |> select(-all_of(var_names))
 	self$data = self$data[setdiff(names(self$data), var_names)]
 	self$var_labels = self$var_labels[setdiff(names(self$var_labels), var_names)]
 	self$val_labels = self$val_labels[setdiff(names(self$val_labels), var_names)]
@@ -141,18 +153,32 @@ DS$set("public", "move", function(..., after = NULL, before = NULL) {
 
 DS$set("public", "clone_if", function(...) {
 	tds = self$clone()
-	tds$data = tds$data |> filter(...)
+	tds$filter(...)
 	tds
 })
 
 
 
-#' @export
+# labels
+
+DS$set("public", "vacuum", function() {
+	self$var_labels = self$var_labels[names(self$var_labels) %in% self$variables]
+	self$val_labels = self$val_labels[names(self$val_labels) %in% self$variables]
+})
+
+DS$set("private", "get_var_label", \(var) self$var_labels[[var]] %||% NA)
+
+DS$set("private", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
+
+DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(private$get_var_label))
+
 conv_to_labels = function(labels) {
 	if (length(labels) == 1) {
 		lines = labels |> strsplit("\n") |> unlist() |> trimws()
 
 		valid_lines = grep("^\\d+\\s+\\w", lines, value = T)
+
+		if (length(valid_lines) == 0) stop("Parsed labels have length 0. Please check the input labels.", call. = F)
 
 		numbers = sub("^(\\d+).*", "\\1", valid_lines) |> as.numeric()
 		names = sub("^\\d+\\s+(.*)", "\\1", valid_lines)
@@ -163,15 +189,10 @@ conv_to_labels = function(labels) {
 	}
 }
 
-
-
-DS$set("public", "add_total", \() self$nvn("total", "Total", c("Total" = 1), fill = 1))
-
 DS$set("public", "add_label_suffix", function(vars, suffix, sep = " ") {
 	self$var_labels[vars] = map(self$var_labels[vars], \(label) paste(label, suffix, sep = sep))
 })
 
-# not needed?
 DS$set("public", "set_var_label", function(var, label) {
 	self$var_labels[[var]] = label
 })
@@ -180,7 +201,7 @@ DS$set("public", "set_val_labels", function(vars, labels) {
 	if (is.character(labels)) labels = conv_to_labels(labels)
 
 	for (var in self$names({{ vars }})) {
-		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = TRUE)])
+		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
 	}
 })
 
@@ -194,22 +215,28 @@ DS$set("public", "add_labels", function(vars, new_labels) {
 
 	for (var in self$names({{ vars }})) {
 		labels = c(self$val_labels[[var]], new_labels)
-		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = TRUE)])
+		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
+	}
+})
+
+DS$set("public", "remove_labels", function(vars, ...) {
+	vars = self$names({{ vars }})
+	values = c(...)
+
+	if (length(values) == 0) {
+		self$val_labels[vars] = NULL
+	} else {
+		self$val_labels[vars] = map(self$val_labels[vars], \(label) label[!label %in% values])
 	}
 })
 
 
 
-DS$set("public", "remove_labels", function(vars, ...) {
-	vars = self$names({{ vars }})
 
-	if (length(list(...)) == 0) self$val_labels[vars] = NULL
-	else self$val_labels[vars] = map(self$val_labels[vars], \(label) label[!label %in% c(...)])
-})
+DS$set("public", "add_total", \() self$nvn("total", "Total", c("Total" = 1), fill = 1))
 
 
-
-# add between
+# add between?
 
 #' @export
 bitcount = function(var, ...) {
@@ -253,100 +280,6 @@ DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 
 		self$data[[var_name]] = match(vec, values, nomatch = nomatch) |> as.double()
 		self$set_val_labels(all_of(var_name), setNames(seq_along(values), values))
-	}
-})
-
-
-
-DS$set("public", "flip_scale", function(vars, ...) {
-	stop("$flip_scale() is deprecated. Please use $scale_flip() instead", call. = F)
-})
-
-# usage ds$scale_flip(base_name("Z6C1"), 1:5)
-DS$set("public", "scale_flip", function(vars, ...) {
-	arg_ids = c(...)
-
-	for (var in self$names({{ vars }})) {
-		ids = if (length(arg_ids) == 0) self$val_labels[[var]] |> unname() else arg_ids
-
-		from_index = match(ids, self$val_labels[[var]])
-		to_index = rev(from_index)
-
-		if (length(from_index) == 0) stop("Specified values not found in the vector.")
-
-		names(self$val_labels[[var]])[from_index] = names(self$val_labels[[var]])[to_index]
-
-		self$recode({{ var }}, !!!map(sprintf("%s ~ %s", ids, rev(ids)), as.formula))
-	}
-})
-
-
-DS$set("public", "scale_dense", function(vars) {
-	for (var in self$names({{ vars }})) {
-		if (!(var %in% names(self$val_labels))) stop("Non-categorical variable")
-
-		ids = self$val_labels[[var]] |> unname()
-		self$val_labels[[var]] = setNames(seq_along(ids), names(self$val_labels[[var]]))
-
-
-		recode_simple = function(xs, ids) {
-			result = xs
-
-			for (i in seq_along(ids)) {
-				result[xs == ids[i]] = i
-			}
-
-			result
-		}
-
-		if (is_multiple(self$data[[var]])) {
-			self$data[[var]] = self$data[[var]] |> map(\(x) recode_simple(x, ids) |> mrcheck())
-		} else {
-			self$data[[var]] = recode_simple(self$data[[var]], ids)
-		}
-	}
-})
-
-
-DS$set("public", "scale_shift", function(vars, from, amount = 1) {
-	for (var in self$names({{ vars }})) {
-		mask = self$val_labels[[var]] >= from
-		self$val_labels[[var]][mask] = self$val_labels[[var]][mask] + amount
-
-		if (is_multiple(self$data[[var]])) {
-			self$data[[var]] = self$data[[var]] |> map(\(x) ifelse(x >= from, x + amount, x))
-		} else {
-			mask = self$data[[var]] >= from
-			self$data[[var]][mask] = self$data[[var]][mask] + amount
-		}
-	}
-})
-
-
-DS$set("public", "scale_move", function(vars, ...) {
-	values = rlang::list2(...)
-
-	for (value in values) {
-		lhs = rlang::eval_tidy(rlang::f_lhs(value))
-		rhs = rlang::eval_tidy(rlang::f_rhs(value))
-		if (length(lhs) != 1 || length(rhs) != 1) stop("Both sides of the '~' must be of length 1.", call. = F)
-
-		for (var in self$names({{ vars }})) {
-			if (rhs %in% unlist(self$data[[var]])) stop(var, " already has " , rhs, call. = F)
-			if (!(lhs %in% self$val_labels[[var]])) stop(var, " has no label for ", lhs, call. = F)
-		}
-	}
-
-	self$recode(vars, ...)
-
-	for (value in values) {
-		lhs = rlang::eval_tidy(rlang::f_lhs(value))
-		rhs = rlang::eval_tidy(rlang::f_rhs(value))
-
-		for (var in self$names({{ vars }})) {
-			self$add_labels({{ var }}, setNames(rhs, names(which(self$val_labels[[var]] == lhs))))
-		}
-		self$remove_labels(vars, lhs)
 	}
 })
 
@@ -397,8 +330,8 @@ DS$set("public", "conv_multiples", function() {
 
 	mdset_data = tibble(var_name = self$variables) |>
 		filter(grepl("_[0-9]+$", var_name)) |>
-		filter(map_lgl(var_name, \(x) identical(self$get_val_labels(x), c("-" = 0, "+" = 1)))) |>
-		mutate(label = map_chr(var_name, \(x) self$get_var_label(x))) |>
+		filter(map_lgl(var_name, \(x) identical(private$get_val_labels(x), c("-" = 0, "+" = 1)))) |>
+		mutate(label = map_chr(var_name, \(x) private$get_var_label(x))) |>
 		filter(!is.na(label)) |>
 		mutate(tokens = strsplit(label, sep, fixed = T)) |>
 		filter(lengths(tokens) > 1) |>
@@ -459,7 +392,7 @@ DS$set("public", "var_view", function(name = NULL, label = NULL, check = F) {
 	res = tibble(
 		pos = seq_along(self$variables),
 		variable = self$variables,
-		label = self$variables |> map_chr(self$get_var_label)
+		label = self$variables |> map_chr(private$get_var_label)
 	)
 
 	if (!is.null(name)) {
@@ -476,7 +409,7 @@ DS$set("public", "var_view", function(name = NULL, label = NULL, check = F) {
 
 	res = res |> mutate(
 		type = variable |> map_chr(get_type),
-		val_labels = variable |> map_chr(\(var_name) val_labels_format(self$get_val_labels(var_name)))
+		val_labels = variable |> map_chr(\(var_name) val_labels_format(private$get_val_labels(var_name)))
 	) |> select(pos, variable, type, label, everything())
 
 	if (check) {

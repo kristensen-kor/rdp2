@@ -15,7 +15,8 @@ base = function(xs) matches(sprintf("^%s_\\d+$", xs))
 
 
 #' @export
-is_multiple = function(...) is.list(...)
+is_multiple = \(x) is.list(x) && all(vapply(x, is.numeric, logical(1)))
+# is_multiple = function(...) is.list(...)
 # is_multiple = is.list
 
 #' @export

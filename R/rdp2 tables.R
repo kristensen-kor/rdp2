@@ -13,8 +13,9 @@ table_block = function(caption = NULL, vars = NULL, filter_var = NULL, filter_va
 	rows_block(caption, vars, filter_var, filter_value)
 }
 
+
 DS$set("public", "prepare_val_labels", function(var, warning = F) {
-	values_dic = sort(self$get_val_labels(var))
+	values_dic = sort(self$val_labels[[var]])
 	values_real = sort(unique(unlist(self$data[[var]])))
 
 	if (warning && !all(values_real %in% values_dic)) cat("Warning, ", var, "has values with no labels\n")

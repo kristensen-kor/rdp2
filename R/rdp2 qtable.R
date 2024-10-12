@@ -11,7 +11,7 @@ DS$set("public", "qtable", function(var, weight = NULL) {
 
 	# var_name = rlang::as_string(ensym(var))
 
-	var_label = self$get_var_label(var_name)
+	var_label = private$get_var_label(var_name)
 	caption = if (!is.na(var_label)) paste(var_name, var_label, sep = "|") else var_name
 
 	weights = weights[!is.na(vec)]
