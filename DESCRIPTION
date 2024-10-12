@@ -27,3 +27,4 @@ Collate:
     'rdp2 transpose.R'
     'rdp2 vars.R'
     'rdp2-package.R'
+    'utils.R'

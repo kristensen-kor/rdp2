@@ -1,114 +1,3 @@
-
-
-# aux
-
-
-#' @export
-base_name = function(xs) {
-	warning("base_name() is deprecated. Please use base() instead", call. = F)
-	matches(sprintf("^%s_\\d+$", xs))
-}
-
-#' @export
-base = function(xs) matches(sprintf("^%s_\\d+$", xs))
-
-
-
-#' @export
-is_multiple = is.list
-
-#' @export
-paste_vars = function(...) paste(..., sep = "_")
-
-#' @export
-mrcheck = function(xs) {
-	xs = xs[!is.na(xs)]
-	unique(xs[order(xs)])
-}
-# mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
-
-#' @export
-add_to_mrset = function(vec, value) {
-	if (is.na(value)) return(vec)
-	if (length(vec) == 0) return(value)
-	if (value %in% vec) return(vec)
-	if (value > max(vec, na.rm = TRUE)) return(c(vec, value))
-	c(vec, value) |> mrcheck()
-}
-# add_to_mrset = function(var, value) c(var, value) |> mrcheck()
-
-
-# #' @export
-# is_valid = function(...) UseMethod("is_valid")
-#
-# #' @export
-# #' @method is_valid list
-# is_valid.list = function(xs) lengths(xs) > 0
-#
-# #' @export
-# #' @method is_valid default
-# is_valid.default = function(xs) !is.na(xs)
-
-.is_valid = function(...) UseMethod(".is_valid")
-.is_valid.list = function(xs) lengths(xs) > 0
-.is_valid.default = function(xs) !is.na(xs)
-#' @export
-is_valid = function(xs) .is_valid(xs)
-
-
-.var_empty = function(...) UseMethod(".var_empty")
-.var_empty.list = function(xs) lengths(xs) == 0
-.var_empty.default = function(xs) is.na(xs)
-
-var_empty = function(...) .var_empty(...)
-
-
-
-# recode = function(...) UseMethod("recode")
-# recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
-# recode.default = function(var, ...) case_match(var, ..., .default = var)
-
-.recode = function(...) UseMethod(".recode")
-.recode.list = function(var, ...) map(var, \(x) case_match_vec_copy(x, ...) |> mrcheck())
-.recode.default = function(var, ...) case_match_vec_copy(var, ...)
-#' @export
-recode = function(...) .recode(...)
-
-
-case_match_vec_copy = function(xs, ...) {
-	cases = rlang::list2(...)
-	result = xs
-
-	for (case in cases) {
-		condition = rlang::eval_tidy(rlang::f_lhs(case))
-		value = rlang::f_rhs(case)
-		mask = if (length(condition) == 1) xs == condition else xs %in% condition
-		result[mask] = value
-	}
-
-	result
-}
-
-
-.transfer = function(...) UseMethod(".transfer")
-.transfer.list = function(var, ...) map(var, \(x) case_match(x, ...) |> mrcheck())
-.transfer.default = function(var, ...) case_match(var, ...)
-#' @export
-transfer = function(...) .transfer(...)
-
-
-
-#' @export
-elapsed_fmt = function(x) {
-	elapsed_in_seconds = as.numeric(x, units = "secs")
-	if (elapsed_in_seconds < 60) {
-		round(elapsed_in_seconds, 1)
-	} else {
-		sprintf("%02d:%04.1f", floor(elapsed_in_seconds / 60), round(elapsed_in_seconds %% 60, 1))
-	}
-}
-
-
 # DS class
 
 #' @export
@@ -138,7 +27,21 @@ DS$set("public", "get_rds", function(filename) {
 })
 
 DS$set("public", "initialize", function(filename = NULL) {
-	if (!is.null(filename)) self$open(filename)
+	if (!is.null(filename)) {
+		if (tools::file_ext(filename) == "") filename = paste0(filename, ".rds")
+
+		if (!file.exists(filename)) stop("File does not exist: ", filename, call. = F)
+
+		file_extension = tools::file_ext(filename) |> tolower()
+
+		if (file_extension == "sav") {
+			self$get_spss(filename)
+		} else if (file_extension == "rds") {
+			self$get_rds(filename)
+		} else {
+			stop("Unknown file format: ", file_extension, ". Only .rds and .sav formats are supported.", call. = F)
+		}
+	}
 })
 
 DS$set("public", "save", function(filename) {
@@ -148,17 +51,6 @@ DS$set("public", "save", function(filename) {
 	saveRDS(save_data, file = filename)
 })
 
-DS$set("public", "open", function(filename) {
-	if (!grepl("\\.[a-zA-Z0-9]+$", filename)) filename = paste0(filename, ".rds")
-
-	if (endsWith(tolower(filename), ".sav")) {
-		self$get_spss(filename)
-	} else if (endsWith(tolower(filename), ".rds")) {
-		self$get_rds(filename)
-	} else {
-		stop("Unknown file format")
-	}
-})
 
 DS$set("active", "variables", \() names(self$data))
 
