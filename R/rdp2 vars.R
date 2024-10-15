@@ -1,5 +1,49 @@
 #' @include rdp2.R
 
+#' @export
+bitcount = function(var, ...) {
+	values = c(...)
+
+	if (length(values) == 0) {
+		lengths(var)
+	} else {
+		map_dbl(var, \(x) length(x[x %in% c(...)]))
+	}
+}
+
+DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
+	vars = self$names(...)
+
+	for (var_name in vars) {
+		vec = self$data[[var_name]]
+		values = NULL
+
+		if (is.numeric(vec)) {
+			values = vec |> unique() |> sort()
+			vec = formatC(vec, format = "f", big.mark = "", drop0trailing = T)
+			values = formatC(values, format = "f", big.mark = "", drop0trailing = T)
+		} else {
+			if (is.null(labels)) {
+				values = vec[vec != ""] |> unique() |> sort()
+			} else {
+				# if (is.character(labels)) labels = conv_to_labels(labels)
+				# values = names(labels)
+
+				values = labels
+			}
+
+			not_found = vec[!(vec %in% values)] |> unique()
+			if (length(not_found) > 0) {
+				cat(var_name, "values not from the list:\n")
+				cat(paste(not_found, collapse = "\n"), "\n")
+			}
+		}
+
+		self$data[[var_name]] = match(vec, values, nomatch = nomatch) |> as.double()
+		self$set_val_labels(all_of(var_name), setNames(seq_along(values), values))
+	}
+})
+
 DS$set("public", "merge_vars", function(...) {
 	# var_names = list(...)
 	var_names = self$names(...)
@@ -86,6 +130,13 @@ DS$set("public", "nvs", function(name, label = NULL, fill = NA, after = NULL, be
 
 DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL, before = NULL) {
 	private$nv_generic(name, label, labels, NULL, after, before, "multiple")
+})
+
+
+DS$set("public", "add_total", \() self$nvn("total", "Total", c("Total" = 1), fill = 1))
+
+DS$set("public", "add_rid", function(name = "RID", label = NULL, fill = row_number(), after = NULL, before = NULL) {
+	self$nvs(name, label, fill = fill, after = after, before = before)
 })
 
 

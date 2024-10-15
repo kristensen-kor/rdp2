@@ -314,7 +314,7 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 		}))
 
 		if (is.list(row_var) && "filter_var" %in% names(row_var)) {
-			val_labels = tds$get_val_labels(row_var$filter_var)
+			val_labels = tds$val_labels[[row_var$filter_var]]
 
 			special_row = tibble(
 				var = NA,

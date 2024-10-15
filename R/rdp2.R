@@ -1,11 +1,18 @@
-# DS class
-
+#' DS Class
+#'
+#' The `DS` class manages both raw data and its associated metadata, facilitating streamlined data manipulation.
+#'
+#' @field data A tibble containing the dataset, with each column representing a different variable (e.g., age, gender, survey responses).
+#' @field var_labels A named list mapping each variable's identifier to a descriptive label, enhancing readability in outputs and reports.
+#' @field val_labels A named list for categorical variables, where each entry maps numeric codes to meaningful category labels (e.g., 1 = "Agree", 2 = "Disagree").
+#'
 #' @export
 DS = R6::R6Class("DS", list(
-	data = NULL,
-	var_labels = NULL,
-	val_labels = NULL
+	data = tibble(),
+	var_labels = list(),
+	val_labels = list()
 ))
+
 
 
 # read/write
@@ -73,6 +80,11 @@ DS$set("public", "base_name", \(xs) self$names(base(xs)))
 
 
 # types
+
+#' @export
+is_multiple = \(x) is.list(x) && all(vapply(x, is.numeric, logical(1)))
+# is_multiple = function(...) is.list(...)
+# is_multiple = is.list
 
 DS$set("public", "var_type", function(...) {
 	map_chr(self$names(...), \(var) {
@@ -166,11 +178,11 @@ DS$set("public", "vacuum", function() {
 	self$val_labels = self$val_labels[names(self$val_labels) %in% self$variables]
 })
 
-DS$set("private", "get_var_label", \(var) self$var_labels[[var]] %||% NA)
+DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA_character_)
 
 DS$set("private", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
 
-DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(private$get_var_label))
+DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(self$get_var_label))
 
 conv_to_labels = function(labels) {
 	if (length(labels) == 1) {
@@ -233,57 +245,6 @@ DS$set("public", "remove_labels", function(vars, ...) {
 
 
 
-DS$set("public", "add_total", \() self$nvn("total", "Total", c("Total" = 1), fill = 1))
-
-
-# add between?
-
-#' @export
-bitcount = function(var, ...) {
-	values = c(...)
-
-	if (length(values) == 0) {
-		lengths(var)
-	} else {
-		map_dbl(var, \(x) length(x[x %in% c(...)]))
-	}
-}
-
-
-DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
-	vars = self$names(...)
-
-	for (var_name in vars) {
-		vec = self$data[[var_name]]
-		values = NULL
-
-		if (is.numeric(vec)) {
-			values = vec |> unique() |> sort()
-			vec = formatC(vec, format = "f", big.mark = "", drop0trailing = T)
-			values = formatC(values, format = "f", big.mark = "", drop0trailing = T)
-		} else {
-			if (is.null(labels)) {
-				values = vec[vec != ""] |> unique() |> sort()
-			} else {
-				# if (is.character(labels)) labels = conv_to_labels(labels)
-				# values = names(labels)
-
-				values = labels
-			}
-
-			not_found = vec[!(vec %in% values)] |> unique()
-			if (length(not_found) > 0) {
-				cat(var_name, "values not from the list:\n")
-				cat(paste(not_found, collapse = "\n"), "\n")
-			}
-		}
-
-		self$data[[var_name]] = match(vec, values, nomatch = nomatch) |> as.double()
-		self$set_val_labels(all_of(var_name), setNames(seq_along(values), values))
-	}
-})
-
-
 
 DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index_values = NULL, index_labels = NULL) {
 	start_time = Sys.time()
@@ -320,7 +281,12 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 	if (!is.null(index_label)) self$var_labels[[index]] = index_label
 })
 
-DS$set("public", "set_multiples", \() self$conv_multiples())
+
+DS$set("public", "set_multiples", \() {
+	warning("$set_multiples() is deprecated. Please use $conv_multiples() instead", call. = F)
+	self$conv_multiples()
+})
+
 
 DS$set("public", "conv_multiples", function() {
 	start_time = Sys.time()
@@ -330,8 +296,8 @@ DS$set("public", "conv_multiples", function() {
 
 	mdset_data = tibble(var_name = self$variables) |>
 		filter(grepl("_[0-9]+$", var_name)) |>
-		filter(map_lgl(var_name, \(x) identical(private$get_val_labels(x), c("-" = 0, "+" = 1)))) |>
-		mutate(label = map_chr(var_name, \(x) private$get_var_label(x))) |>
+		filter(map_lgl(var_name, \(x) identical(self$get_val_labels(x), c("-" = 0, "+" = 1)))) |>
+		mutate(label = self$get_var_labels(var_name)) |>
 		filter(!is.na(label)) |>
 		mutate(tokens = strsplit(label, sep, fixed = T)) |>
 		filter(lengths(tokens) > 1) |>
@@ -350,17 +316,8 @@ DS$set("public", "conv_multiples", function() {
 	for (mdset in mdsets) {
 		current_slice = mdset_data[mdset_data$base_name == mdset, ]
 
-		# col_data = do.call(rbind, current_slice$var_name |> map(\(var_name) {
-		# 	id = current_slice[current_slice$var_name == var_name, ]$id
-		# 	ifelse(self$data[[var_name]] == 1, id, NA)
-		# })) |> as.data.frame() |> as.list() |> map(\(x) x[!is.na(x)]) |> unname()
-		#
-		# self$data = self$data |> mutate("{ mdset }" := col_data, .before = current_slice$var_name[1]) |> select(-all_of(current_slice$var_name))
-		# self$var_labels[[mdset]] = current_slice[1, ]$prefix
-		# self$val_labels[[mdset]] = setNames(current_slice$id, current_slice$label)
-
 		col_data = do.call(rbind, seq_len(nrow(current_slice)) |> lapply(\(i) {
-			ifelse(self$data[[current_slice$var_name[i]]] == 1, current_slice$id[i], NA)
+			ifelse(has(self$data[[current_slice$var_name[i]]], 1), current_slice$id[i], NA_real_)
 		})) |> as.data.frame() |> as.list() |> lapply(\(x) x[!is.na(x)]) |> unname()
 
 		self$data[[mdset]] = col_data
@@ -376,23 +333,16 @@ DS$set("public", "conv_multiples", function() {
 
 
 
-DS$set("public", "var_view", function(name = NULL, label = NULL, check = F) {
+DS$set("public", "var_view", function(name = NULL, label = NULL) {
 	val_labels_format = function(xs) {
 		if (all(is.na(xs))) NA
 		else paste0("[", xs, "] ", names(xs)) |> paste(collapse = "; ")
 	}
 
-	get_type = function(var_name) {
-		if (typeof(self$data[[var_name]]) == "character") return("string")
-		if (is_multiple(self$data[[var_name]])) return("multiple")
-		if (!var_name %in% names(self$val_labels)) return("scale")
-		NA
-	}
-
 	res = tibble(
 		pos = seq_along(self$variables),
 		variable = self$variables,
-		label = self$variables |> map_chr(private$get_var_label)
+		label = self$get_var_labels(everything())
 	)
 
 	if (!is.null(name)) {
@@ -408,23 +358,34 @@ DS$set("public", "var_view", function(name = NULL, label = NULL, check = F) {
 	}
 
 	res = res |> mutate(
-		type = variable |> map_chr(get_type),
+		type = self$var_type(all_of(variable)),
+		type = ifelse(is.na(type), "type error", type),
+		type = ifelse(type == "single", NA_character_, type),
 		val_labels = variable |> map_chr(\(var_name) val_labels_format(private$get_val_labels(var_name)))
 	) |> select(pos, variable, type, label, everything())
 
-	if (check) {
-		res = res |> mutate(
-			unique_values = variable |> map(\(var) self$data[[var]] |> unlist() |> unique() |> discard(\(x) is.na(x) || x == "")),
-			empty = ifelse(lengths(unique_values) == 0, "1", ""),
-			same = ifelse(lengths(unique_values) == 1, "1", ""),
-			valid = variable |> map_dbl(\(var) self$data[[var]] |> map(\(x) if (all(is.na(x)) || all(x == "")) NULL else x) |> compact() |> length()),
-			distinct = lengths(unique_values),
-			unique_values = NULL
-		)
-	}
+	res
+})
+
+
+DS$set("public", "var_check", function(name = NULL, label = NULL) {
+	res = self$var_view(name, label)
+
+	res = res |> mutate(
+		unique_values = variable |> map(\(var) self$data[[var]] |> unlist() |> unique() |> discard(\(x) is.na(x) || x == "")),
+		empty = ifelse(lengths(unique_values) == 0, "1", ""),
+		same = ifelse(lengths(unique_values) == 1, "1", ""),
+		valid = variable |> map_dbl(\(var) self$data[[var]] |> map(\(x) if (all(is.na(x)) || all(x == "")) NULL else x) |> compact() |> length()),
+		distinct = lengths(unique_values),
+		unique_values = NULL
+	)
 
 	res
 })
+
+
+
+
 
 
 DS$set("public", "export_copy", function(...) {
