@@ -75,7 +75,8 @@ DS$set("public", "get_col_names", \(...) {
 
 DS$set("public", "names", \(...) self$data |> select(...) |> names())
 
-DS$set("public", "base_name", \(xs) self$names(base(xs)))
+# DS$set("public", "base_name", \(xs) self$names(base(xs)))
+DS$set("public", "base_name", \(...) self$names(base(...)))
 
 
 

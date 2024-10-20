@@ -10,9 +10,8 @@ base_name = function(xs) {
 }
 
 #' @export
-base = function(xs) matches(sprintf("^%s_\\d+$", xs))
-
-
+base = function(...) matches(paste(sprintf("^%s_\\d+$", c(...)), collapse = "|"))
+# base = function(xs) matches(sprintf("^%s_\\d+$", xs))
 
 
 
