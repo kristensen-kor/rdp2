@@ -22,7 +22,7 @@ DS$set("public", "vars_transpose", function(vars, new_name, label_prefix, na_cod
 
 	walk2(self$base_name(new_name), values_from, \(var_name, value) {
 		self$data[[var_name]] = do.call(rbind, map2(vars, ids_from, \(var_from, id) {
-			ifelse(has(self$data[[var_from]], value), id, NA)
+			if_else(has(self$data[[var_from]], value), id, NA_real_)
 		})) |> as.data.frame() |> as.list() |> lapply(\(x) x[!is.na(x)]) |> unname()
 	})
 

@@ -56,7 +56,7 @@ DS$set("public", "scale_shift", function(vars, from, amount = 1) {
 		self$val_labels[[var]][mask] = self$val_labels[[var]][mask] + amount
 
 		if (is_multiple(self$data[[var]])) {
-			self$data[[var]] = self$data[[var]] |> map(\(x) ifelse(x >= from, x + amount, x))
+			self$data[[var]] = self$data[[var]] |> map(\(x) if_else(x >= from, x + amount, x))
 		} else {
 			mask = self$data[[var]] >= from
 			self$data[[var]][mask] = self$data[[var]][mask] + amount

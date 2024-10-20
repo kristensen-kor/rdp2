@@ -5,7 +5,28 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NUL
 
 	values = vars |> map(\(var) self$prepare_val_labels(var, warning = T))
 
-	if (!all(map_lgl(values, \(x) identical(x, values[[1]])))) stop("Error: values should be same")
+	# if (!all(map_lgl(values, \(x) identical(x, values[[1]])))) stop("Error: values should be same")
+	if (!all(map_lgl(values, \(x) identical(x, values[[1]])))) {
+		mismatched_vars = vars[!map_lgl(values, \(x) identical(x, values[[1]]))]
+		error_message = "Error: value labels do not match across variables:\n"
+
+		for (var in mismatched_vars) {
+			labels1 = names(values[[1]])
+			labels2 = names(values[[var]])
+
+			missing_in_var = setdiff(labels1, labels2)
+			extra_in_var = setdiff(labels2, labels1)
+
+			error_message = paste0(
+				error_message,
+				"- ", var, ":\n",
+				if (length(missing_in_var) > 0) paste0("  Missing labels: ", paste(missing_in_var, collapse = ", "), "\n") else "",
+				if (length(extra_in_var) > 0) paste0("  Extra labels: ", paste(extra_in_var, collapse = ", "), "\n") else ""
+			)
+		}
+
+		stop(error_message, call. = F)
+	}
 
 	distr = vars |> map(\(var) private$calc_raw_table(var, weight))
 	bases = distr |> map_dbl(\(x) x[1])

@@ -22,7 +22,7 @@ paste_vars = function(...) paste(..., sep = "_")
 #' @export
 mrcheck = function(xs) {
 	xs = xs[!is.na(xs)]
-	unique(xs[order(xs)])
+	if (length(xs) == 0) numeric(0) else unique(xs[order(xs)])
 }
 # mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
 

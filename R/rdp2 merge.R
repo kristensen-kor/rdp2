@@ -33,8 +33,8 @@ DS$set("public", "merge_data", function(...) {
 				for (var in mismatch_vars) {
 					type_mismatches[[length(type_mismatches) + 1]] = list(
 						variable = var,
-						self_type = self_types[var],
-						ds_type = ds_types[var],
+						self_type = self_types[which(common_vars == var)],
+						ds_type = ds_types[which(common_vars == var)],
 						dataset_id = i + 1
 					)
 				}
@@ -74,7 +74,7 @@ DS$set("public", "merge_data", function(...) {
 		}
 	}
 
-	self$data = self$data |> mutate(across(where(is_multiple), \(var) map(var, \(x) if (is.null(x)) numeric(0) else x)))
+	self$data = self$data |> mutate(across(where(is.list), \(var) map(var, \(x) if (is.null(x)) numeric(0) else x)))
 
 	cat("\nFinal merged dataset:\n")
 	cat(sprintf("Total variables: %d\n", length(self$variables)))
