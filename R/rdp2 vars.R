@@ -267,10 +267,10 @@ DS$set("public", "vstrip", function(vars, ...) {
 DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NULL, labels = NULL, move = T, suffix_position = "auto", else_copy = F) {
 	var_names = self$names({{ vars }})
 
-	if (length(var_names) > 1) {
-		new_vars = var_renamer(var_names, presuffix = suffix)
-	} else {
+	if (length(var_names) == 1 || suffix_position == "end") {
 		new_vars = var_renamer(var_names, suffix = suffix)
+	} else {
+		new_vars = var_renamer(var_names, presuffix = suffix)
 	}
 
 	walk2(var_names, new_vars, \(var, new_var) {
@@ -290,67 +290,6 @@ DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NU
 	invisible(new_vars)
 })
 
-# DS$set("public", "make_t2b", function(vars, ..., suffix = "T2B", label_suffix = "(T2B)", labels = NULL, move = T, suffix_position = "auto", else_copy = F) {
-# 	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, move = move, suffix_position = suffix_position, else_copy = else_copy)
-# })
-
-DS$set("public", "make_tb", function(vars, box_size = 2, ..., suffix = NULL, label_suffix = NULL, labels = NULL, is_reverse = F, range = NULL, move = T, suffix_position = "auto", else_copy = F) {
-	if (is.null(suffix)) suffix = paste0("T", box_size, "B")
-	if (is.null(label_suffix)) label_suffix = paste0("(T", box_size, "B)")
-
-	if (is.null(labels)) {
-		labels = c(paste0("Top-", box_size, "-Box"), "Middle", paste0("Bottom-", box_size, "-Box"))
-		if (is_reverse) labels = rev(labels)
-	}
-
-	types = self$var_type({{ vars }})
-	var_names = self$names({{ vars }})
-	bad_vars = var_names[!(types %in% c("single", "numeric"))]
-
-	if (length(bad_vars) > 0) {
-		error_message = "Error: The following variables must be 'single' or 'numeric':\n"
-		for (var in bad_vars) {
-			error_message = paste0(error_message, "- ", var, ": ", types[var], "\n")
-		}
-		stop(error_message, call. = F)
-	}
-
-	if (!is.null(range) && length(range) < (2 * box_size)) stop("Error: 'range' should contain at least ", 2 * box_size, " values.", call. = F)
-
-	new_vars = self$nvclone({{ vars }}, suffix = suffix, label_suffix = label_suffix, labels = labels, move = move, suffix_position = suffix_position, else_copy = else_copy)
-
-	if (!is.null(range)) {
-		n = length(range)
-
-		if (is_reverse) range = rev(range)
-
-		top_boxes = range |> head(box_size)
-		bottom_boxes = range |> tail(box_size)
-		middle = if (n > 2 * box_size) range[(box_size + 1):(n - box_size)] else NULL
-
-		for (i in seq_along(new_vars)) {
-			result = self$data[[new_vars[i]]]
-			xs = self$data[[var_names[i]]]
-
-			result[xs %in% top_boxes] = if (!is_reverse) 1 else 3
-			if (!is.null(middle)) result[xs %in% middle] = 2
-			result[xs %in% bottom_boxes] = if (!is_reverse) 3 else 1
-
-			self$data[[new_vars[i]]] = result
-		}
-	}
-
-	if (length(list(...)) > 0 && else_copy) self$recode(all_of(new_vars), ...)
-	if (length(list(...)) > 0 && !else_copy) self$transfer(all_of(new_vars), ...)
-})
-
-DS$set("public", "make_t2b", function(vars, ..., suffix = "T2B", label_suffix = "(T2B)", labels = NULL, is_reverse = F, range = NULL, move = T, suffix_position = "auto", else_copy = F) {
-	self$make_tb(vars = {{ vars }}, box_size = 2, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, is_reverse = is_reverse, range = range, move = move, suffix_position = suffix_position, else_copy = else_copy)
-})
-
-DS$set("public", "make_t3b", function(vars, ..., suffix = "T3B", label_suffix = "(T3B)", labels = NULL, is_reverse = F, range = NULL, move = T, suffix_position = "auto", else_copy = F) {
-	self$make_tb(vars = {{ vars }}, box_size = 3, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, is_reverse = is_reverse, range = range, move = move, suffix_position = suffix_position, else_copy = else_copy)
-})
 
 DS$set("public", "make_means", function(vars, ..., suffix = "MEAN", label_suffix = "(MEAN)", move = T, suffix_position = "auto", vdiscard = NULL, else_copy = F) {
 	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, move = move, suffix_position = suffix_position, else_copy = else_copy)

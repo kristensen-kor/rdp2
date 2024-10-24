@@ -5,28 +5,52 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NUL
 
 	values = vars |> map(\(var) self$prepare_val_labels(var, warning = T))
 
-	# if (!all(map_lgl(values, \(x) identical(x, values[[1]])))) stop("Error: values should be same")
 	if (!all(map_lgl(values, \(x) identical(x, values[[1]])))) {
-		mismatched_vars = vars[!map_lgl(values, \(x) identical(x, values[[1]]))]
+		mismatched_vars = which(!map_lgl(values, \(x) identical(x, values[[1]])))
 		error_message = "Error: value labels do not match across variables:\n"
 
 		for (var in mismatched_vars) {
-			labels1 = names(values[[1]])
-			labels2 = names(values[[var]])
+			var_1 = values[[1]]
+			var_n = values[[var]]
 
-			missing_in_var = setdiff(labels1, labels2)
-			extra_in_var = setdiff(labels2, labels1)
+			base_only = setdiff(var_1, var_n)
+			comp_only = setdiff(var_n, var_1)
 
-			error_message = paste0(
-				error_message,
-				"- ", var, ":\n",
-				if (length(missing_in_var) > 0) paste0("  Missing labels: ", paste(missing_in_var, collapse = ", "), "\n") else "",
-				if (length(extra_in_var) > 0) paste0("  Extra labels: ", paste(extra_in_var, collapse = ", "), "\n") else ""
-			)
+			if (length(base_only) > 0) {
+				error_message = paste0(error_message, "- ", vars[1], " exclusive: ", 	paste0(sprintf("[%s] %s", base_only, names(var_1)[var_1 %in% base_only]), collapse = "; "), "\n")
+			}
+
+			if (length(comp_only) > 0) {
+				error_message = paste0(error_message, "- ", vars[var], " exclusive: ", 	paste0(sprintf("[%s] %s", comp_only, names(var_n)[var_n %in% comp_only]), collapse = "; "), "\n")
+			}
+
+			value_matches = intersect(var_1, var_n)
+			name_mismatches = which(map_lgl(value_matches, \(val) {
+				names(var_1)[which(var_1 == val)] != names(var_n)[which(var_n == val)]
+			}))
+
+			mismatched_in_vars_1 = c()
+			mismatched_in_vars_n = c()
+
+			for (i in name_mismatches) {
+				val = value_matches[i]
+				x_name = names(var_1)[which(var_1 == val)]
+				y_name = names(var_n)[which(var_n == val)]
+				mismatched_in_vars_1 = c(mismatched_in_vars_1, paste0("[", val, "] ", x_name))
+				mismatched_in_vars_n = c(mismatched_in_vars_n, paste0("[", val, "] ", y_name))
+			}
+
+			if (length(name_mismatches) > 0) {
+				error_message = paste0(
+					error_message,
+					"- ", vars[1], ": ", paste0(mismatched_in_vars_1, collapse = "; "), "; and ", vars[var], ": ", paste0(mismatched_in_vars_n, collapse = "; "), "\n"
+				)
+			}
 		}
 
 		stop(error_message, call. = F)
 	}
+
 
 	distr = vars |> map(\(var) private$calc_raw_table(var, weight))
 	bases = distr |> map_dbl(\(x) x[1])

@@ -32,6 +32,10 @@ The `DS` class manages both raw data and its associated metadata, facilitating s
 \item \href{#method-DS-scale_dense}{\code{DS$scale_dense()}}
 \item \href{#method-DS-scale_shift}{\code{DS$scale_shift()}}
 \item \href{#method-DS-scale_move}{\code{DS$scale_move()}}
+\item \href{#method-DS-recode_from_to}{\code{DS$recode_from_to()}}
+\item \href{#method-DS-make_tb}{\code{DS$make_tb()}}
+\item \href{#method-DS-make_t2b}{\code{DS$make_t2b()}}
+\item \href{#method-DS-make_t3b}{\code{DS$make_t3b()}}
 \item \href{#method-DS-prepare_val_labels}{\code{DS$prepare_val_labels()}}
 \item \href{#method-DS-calc_table}{\code{DS$calc_table()}}
 \item \href{#method-DS-vars_transpose}{\code{DS$vars_transpose()}}
@@ -49,6 +53,7 @@ The `DS` class manages both raw data and its associated metadata, facilitating s
 \item \href{#method-DS-nvs}{\code{DS$nvs()}}
 \item \href{#method-DS-nvm}{\code{DS$nvm()}}
 \item \href{#method-DS-add_total}{\code{DS$add_total()}}
+\item \href{#method-DS-add_rid}{\code{DS$add_rid()}}
 \item \href{#method-DS-nvn_src}{\code{DS$nvn_src()}}
 \item \href{#method-DS-nvs_src}{\code{DS$nvs_src()}}
 \item \href{#method-DS-transfer_to}{\code{DS$transfer_to()}}
@@ -60,8 +65,6 @@ The `DS` class manages both raw data and its associated metadata, facilitating s
 \item \href{#method-DS-vdiscard}{\code{DS$vdiscard()}}
 \item \href{#method-DS-vstrip}{\code{DS$vstrip()}}
 \item \href{#method-DS-nvclone}{\code{DS$nvclone()}}
-\item \href{#method-DS-make_t2b}{\code{DS$make_t2b()}}
-\item \href{#method-DS-make_t3b}{\code{DS$make_t3b()}}
 \item \href{#method-DS-make_means}{\code{DS$make_means()}}
 \item \href{#method-DS-make_nps0_groups}{\code{DS$make_nps0_groups()}}
 \item \href{#method-DS-make_nps1_groups}{\code{DS$make_nps1_groups()}}
@@ -221,6 +224,73 @@ The `DS` class manages both raw data and its associated metadata, facilitating s
 \subsection{Method \code{scale_move()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{DS$scale_move(vars, ...)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-DS-recode_from_to"></a>}}
+\if{latex}{\out{\hypertarget{method-DS-recode_from_to}{}}}
+\subsection{Method \code{recode_from_to()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{DS$recode_from_to(from_vars, to_vars, ...)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-DS-make_tb"></a>}}
+\if{latex}{\out{\hypertarget{method-DS-make_tb}{}}}
+\subsection{Method \code{make_tb()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{DS$make_tb(
+  vars,
+  box_size = 2,
+  ...,
+  suffix = NULL,
+  label_suffix = NULL,
+  labels = NULL,
+  is_reverse = F,
+  range = NULL,
+  move = T,
+  suffix_position = "auto"
+)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-DS-make_t2b"></a>}}
+\if{latex}{\out{\hypertarget{method-DS-make_t2b}{}}}
+\subsection{Method \code{make_t2b()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{DS$make_t2b(
+  vars,
+  ...,
+  suffix = "T2B",
+  label_suffix = "(T2B)",
+  labels = NULL,
+  is_reverse = F,
+  range = NULL,
+  move = T,
+  suffix_position = "auto"
+)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-DS-make_t3b"></a>}}
+\if{latex}{\out{\hypertarget{method-DS-make_t3b}{}}}
+\subsection{Method \code{make_t3b()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{DS$make_t3b(
+  vars,
+  ...,
+  suffix = "T3B",
+  label_suffix = "(T3B)",
+  labels = NULL,
+  is_reverse = F,
+  range = NULL,
+  move = T,
+  suffix_position = "auto"
+)}\if{html}{\out{</div>}}
 }
 
 }
@@ -394,6 +464,21 @@ The `DS` class manages both raw data and its associated metadata, facilitating s
 
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-DS-add_rid"></a>}}
+\if{latex}{\out{\hypertarget{method-DS-add_rid}{}}}
+\subsection{Method \code{add_rid()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{DS$add_rid(
+  name = "RID",
+  label = NULL,
+  fill = row_number(),
+  after = NULL,
+  before = NULL
+)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-DS-nvn_src"></a>}}
 \if{latex}{\out{\hypertarget{method-DS-nvn_src}{}}}
 \subsection{Method \code{nvn_src()}}{
@@ -506,42 +591,6 @@ The `DS` class manages both raw data and its associated metadata, facilitating s
   ...,
   suffix = NULL,
   label_suffix = NULL,
-  labels = NULL,
-  move = T,
-  suffix_position = "auto",
-  else_copy = F
-)}\if{html}{\out{</div>}}
-}
-
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-DS-make_t2b"></a>}}
-\if{latex}{\out{\hypertarget{method-DS-make_t2b}{}}}
-\subsection{Method \code{make_t2b()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DS$make_t2b(
-  vars,
-  ...,
-  suffix = "T2B",
-  label_suffix = "(T2B)",
-  labels = NULL,
-  move = T,
-  suffix_position = "auto",
-  else_copy = F
-)}\if{html}{\out{</div>}}
-}
-
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-DS-make_t3b"></a>}}
-\if{latex}{\out{\hypertarget{method-DS-make_t3b}{}}}
-\subsection{Method \code{make_t3b()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DS$make_t3b(
-  vars,
-  ...,
-  suffix = "T3B",
-  label_suffix = "(T3B)",
   labels = NULL,
   move = T,
   suffix_position = "auto",
@@ -689,7 +738,7 @@ The `DS` class manages both raw data and its associated metadata, facilitating s
 \if{latex}{\out{\hypertarget{method-DS-base_name}{}}}
 \subsection{Method \code{base_name()}}{
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{DS$base_name(xs)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{DS$base_name(...)}\if{html}{\out{</div>}}
 }
 
 }
