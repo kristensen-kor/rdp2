@@ -1,9 +1,11 @@
 #' @include rdp2.R
 
+# Deprecated method.
 DS$set("public", "flip_scale", function(vars, ...) {
 	stop("$flip_scale() is deprecated. Please use $scale_flip() instead", call. = F)
 })
 
+# Flips the scale of specified variables by reversing their value labels and recoding the data accordingly.
 # usage ds$scale_flip(base_name("Z6C1"), 1:5)
 DS$set("public", "scale_flip", function(vars, ...) {
 	arg_ids = c(...)
@@ -22,7 +24,7 @@ DS$set("public", "scale_flip", function(vars, ...) {
 	}
 })
 
-
+# Converts categorical variables to a dense numeric scale by assigning sequential numbers to value labels.
 DS$set("public", "scale_dense", function(vars) {
 	for (var in self$names({{ vars }})) {
 		if (!(var %in% names(self$val_labels))) stop("Non-categorical variable")
@@ -49,7 +51,7 @@ DS$set("public", "scale_dense", function(vars) {
 	}
 })
 
-
+# Shifts the value labels of specified variables by a given amount starting from a defined threshold.
 DS$set("public", "scale_shift", function(vars, from, amount = 1) {
 	for (var in self$names({{ vars }})) {
 		mask = self$val_labels[[var]] >= from
@@ -64,7 +66,7 @@ DS$set("public", "scale_shift", function(vars, from, amount = 1) {
 	}
 })
 
-
+# Moves value labels of specified variables based on provided mapping rules.
 DS$set("public", "scale_move", function(vars, ...) {
 	values = rlang::list2(...)
 
