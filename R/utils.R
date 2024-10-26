@@ -9,15 +9,18 @@ base_name = function(xs) {
 	matches(sprintf("^%s_\\d+$", xs))
 }
 
+#' Creates a regex pattern to match variables with specified prefixes followed by an underscore and digits.
 #' @export
 base = function(...) matches(paste(sprintf("^%s_\\d+$", c(...)), collapse = "|"))
 # base = function(xs) matches(sprintf("^%s_\\d+$", xs))
 
 
 
+#' Concatenates variable names with an underscore separator.
 #' @export
 paste_vars = function(...) paste(..., sep = "_")
 
+#' Filters and returns unique, sorted, non-NA values from a vector.
 #' @export
 mrcheck = function(xs) {
 	xs = xs[!is.na(xs)]
@@ -25,6 +28,7 @@ mrcheck = function(xs) {
 }
 # mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
 
+#' Adds a value to a multiple-response set, ensuring uniqueness and order.
 #' @export
 add_to_mrset = function(vec, value) {
 	if (is.na(value)) return(vec)
@@ -47,9 +51,12 @@ add_to_mrset = function(vec, value) {
 # #' @method is_valid default
 # is_valid.default = function(xs) !is.na(xs)
 
+# Internal method to determine validity based on input type.
 .is_valid = function(...) UseMethod(".is_valid")
 .is_valid.list = function(xs) lengths(xs) > 0
 .is_valid.default = function(xs) !is.na(xs)
+
+#' Checks if elements are valid based on their type.
 #' @export
 is_valid = function(xs) .is_valid(xs)
 
@@ -58,6 +65,7 @@ is_valid = function(xs) .is_valid(xs)
 .var_empty.list = function(xs) lengths(xs) == 0
 .var_empty.default = function(xs) is.na(xs)
 
+# Checks if variables are empty.
 var_empty = function(...) .var_empty(...)
 
 
@@ -69,10 +77,13 @@ var_empty = function(...) .var_empty(...)
 .recode = function(...) UseMethod(".recode")
 .recode.list = function(var, ...) map(var, \(x) case_match_vec_copy(x, ...) |> mrcheck())
 .recode.default = function(var, ...) case_match_vec_copy(var, ...)
+
+#' Recode function for variables based on their type.
 #' @export
 recode = function(...) .recode(...)
 
 
+# Performs case-based matching and replacement on a vector.
 case_match_vec_copy = function(xs, ...) {
 	cases = rlang::list2(...)
 	result = xs
@@ -91,11 +102,13 @@ case_match_vec_copy = function(xs, ...) {
 .transfer = function(...) UseMethod(".transfer")
 .transfer.list = function(var, ...) map(var, \(x) case_match(x, ...) |> mrcheck())
 .transfer.default = function(var, ...) case_match(var, ...)
+
+#' Transfers values of variables based on matching conditions.
 #' @export
 transfer = function(...) .transfer(...)
 
 
-
+#' Formats elapsed time for display in seconds or MM:SS format.
 #' @export
 elapsed_fmt = function(x) {
 	elapsed_in_seconds = as.numeric(x, units = "secs")

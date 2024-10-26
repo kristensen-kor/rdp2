@@ -1,5 +1,6 @@
 #' @include rdp2.R
 
+#' Counts occurrences of specified values within a variable.
 #' @export
 bitcount = function(var, ...) {
 	values = c(...)
@@ -11,6 +12,7 @@ bitcount = function(var, ...) {
 	}
 }
 
+# Automatically codes single-response variables based on provided labels.
 DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 	vars = self$names(...)
 
@@ -44,18 +46,21 @@ DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 	}
 })
 
+# Merges multiple variables into a single variable by combining their values.
 DS$set("public", "merge_vars", function(...) {
 	# var_names = list(...)
 	var_names = self$names(...)
 	self$data[[var_names[[1]]]] = var_names |> map(\(var_name) self$data[[var_name]]) |> pmap(\(...) c(...) |> mrcheck())
 })
 
+# Converts specified variables to multiple-response type.
 DS$set("public", "to_multiple", function(...) {
 	for (var in self$names(...)) {
 		if (!is_multiple(self$data[[var]])) self$data[[var]] = map(self$data[[var]], mrcheck)
 	}
 })
 
+# Converts specified variables to single-response type.
 DS$set("public", "to_single", function(...) {
 	for (var in self$names(...)) {
 		if (is_multiple(self$data[[var]])) {
@@ -65,20 +70,21 @@ DS$set("public", "to_single", function(...) {
 	}
 })
 
-
+# Recodes specified variables based on provided mapping.
 DS$set("public", "recode", function(vars, ...) {
 	for (var in self$names({{ vars }})) {
 		self$data[[var]] = recode(self$data[[var]], ...)
 	}
 })
 
+# Transfers values of specified variables based on provided conditions.
 DS$set("public", "transfer", function(vars, ...) {
 	for (var in self$names({{ vars }})) {
 		self$data[[var]] = transfer(self$data[[var]], ...)
 	}
 })
 
-
+# Recodes empty values in specified columns to a given value and optionally adds a label.
 DS$set("public", "recode_empty", function(cols, value, label = NULL) {
 	recode_empty = function(var, value) {
 		var[var_empty(var)] = value
@@ -90,22 +96,25 @@ DS$set("public", "recode_empty", function(cols, value, label = NULL) {
 	if (!is.null(label)) self$add_labels({{ cols }}, setNames(value, label))
 })
 
+# Recalculates empty values by discarding existing ones and recoding to a new value.
 DS$set("public", "recalc_empty", function(cols, value, label = NULL) {
 	self$vdiscard({{ cols }}, value)
 	self$recode_empty({{ cols }}, value, label)
 })
 
 
-
+# Computes a new variable based on an expression.
 DS$set("public", "compute", function(var_name, expr) {
 	self$data = self$data |> mutate("{ var_name }" := !!enquo(expr))
 })
 
-
+# Applies mutation functions to the dataset.
 DS$set("public", "mutate", function(...) {
 	self$data = self$data |> mutate(...)
 })
 
+
+# Internal generic method for creating new variables with specified attributes.
 DS$set("private", "nv_generic", function(name, label = NULL, labels = NULL, fill = NA, after = NULL, before = NULL, var_type = "single") {
 	if (name %in% self$variables) cat("Warning:", name, "is already present. Replacing.\n")
 
@@ -120,26 +129,31 @@ DS$set("private", "nv_generic", function(name, label = NULL, labels = NULL, fill
 	if (!is.null(labels)) self$set_val_labels({{ name }}, labels)
 })
 
+# Creates a new single-response variable with specified attributes.
 DS$set("public", "nvn", function(name, label = NULL, labels = NULL, fill = NA, after = NULL, before = NULL) {
 	private$nv_generic(name, label, labels, fill, after, before, "single")
 })
 
+# Creates a new numeric variable without value labels.
 DS$set("public", "nvs", function(name, label = NULL, fill = NA, after = NULL, before = NULL) {
 	private$nv_generic(name, label, labels = NULL, fill, after, before, "single")
 })
 
+# Creates a new multiple-response variable with specified attributes.
 DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL, before = NULL) {
 	private$nv_generic(name, label, labels, NULL, after, before, "multiple")
 })
 
-
+# Adds a total variable with a fixed value of 1.
 DS$set("public", "add_total", \() self$nvn("total", "Total", c("Total" = 1), fill = 1))
 
+# Adds a respondent ID (RID) variable with sequential numbering.
 DS$set("public", "add_rid", function(name = "RID", label = NULL, fill = row_number(), after = NULL, before = NULL) {
 	self$nvs(name, label, fill = fill, after = after, before = before)
 })
 
 
+# Renames variables by adding a suffix or prefix.
 var_renamer = function(var_names, suffix = NULL, presuffix = NULL) {
 	stopifnot(xor(is.null(suffix), is.null(presuffix)))
 
@@ -152,6 +166,7 @@ var_renamer = function(var_names, suffix = NULL, presuffix = NULL) {
 	}
 }
 
+# Creates new variables from source variables with optional suffixes and labels.
 DS$set("public", "nvn_src", function(vars, suffix = NULL, label_suffix = NULL, labels = NULL, move = T, presuffix = NULL) {
 	var_names = self$names({{ vars }})
 	new_vars = var_renamer(var_names, suffix, presuffix)
@@ -168,6 +183,7 @@ DS$set("public", "nvn_src", function(vars, suffix = NULL, label_suffix = NULL, l
 	invisible(new_vars)
 })
 
+# Creates new numeric source variables and removes their labels.
 DS$set("public", "nvs_src", function(vars, suffix = NULL, label_suffix = NULL, move = T, presuffix = NULL) {
 	new_vars = self$nvn_src({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, presuffix = presuffix)
 	self$remove_labels(all_of(new_vars))
@@ -175,7 +191,7 @@ DS$set("public", "nvs_src", function(vars, suffix = NULL, label_suffix = NULL, m
 })
 
 
-
+# Transfers values from one set of variables to another.
 DS$set("public", "transfer_to", function(new_vars, from_vars, ...) {
 	walk2(
 		self$names({{ new_vars }}),
@@ -186,6 +202,7 @@ DS$set("public", "transfer_to", function(new_vars, from_vars, ...) {
 	if (length(list(...)) > 0) self$transfer({{ new_vars }}, ...)
 })
 
+# Clones a variable to a new variable with optional label and position.
 DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after = NULL) {
 	self$data = self$data |> mutate("{ new_var }" := .data[[from_var]], .after = {{ after }})
 
@@ -194,11 +211,12 @@ DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after =
 })
 
 
-
+# Internal method to set values based on logical conditions.
 set_if_lgl = function(...) UseMethod(".set_if_lgl")
 .set_if_lgl.list = function(var, value, condition) modify_at(var, which(condition), \(x) mrcheck(value))
 .set_if_lgl.default = function(var, value, condition) replace(var, condition, value)
 
+# Sets values of a variable based on provided logical conditions and optionally adds a label.
 DS$set("public", "set_if", function(var, value, ..., label = NULL) {
 	# condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
 	#
@@ -215,11 +233,12 @@ DS$set("public", "set_if", function(var, value, ..., label = NULL) {
 	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
 })
 
-
+# Sets values of a variable to NA based on provided logical conditions.
 DS$set("public", "set_na_if", function(var, ...) {
 	self$set_if(var, NA, ...)
 })
 
+# Adds a value to a multiple-response variable based on provided conditions and optionally adds a label.
 DS$set("public", "add_if", function(var, value, ..., label = NULL) {
 	if (!is_multiple(self$data[[var]])) stop("Error: Expecting variable of multiple type.")
 
@@ -234,10 +253,11 @@ DS$set("public", "add_if", function(var, value, ..., label = NULL) {
 	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
 })
 
+# Adds a net value to multiple-response variables based on provided conditions and optionally adds a label.
 DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 	# condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
 
-	if (!all(self$data |> select({{ vars }}) |> map_lgl(is_multiple))) stop("Error: Expecting variables of multiple type.")
+	if (!all(self$data |> select({{ vars }}) |> map_lgl(is_multiple))) stop("Error: Expecting variables of multiple type.", call. = F)
 
 	for (var in self$names({{ vars }})) {
 		self$data[[var]] = self$data[[var]] |> modify_at(has(self$data[[var]], ...), \(x) add_to_mrset(x, value))
@@ -246,6 +266,7 @@ DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 	if (!is.null(label)) self$add_labels({{ vars }}, setNames(value, label))
 })
 
+# Discards specified values from variables.
 DS$set("public", "vdiscard", function(vars, ...) {
 	values = c(...)
 
@@ -258,12 +279,13 @@ DS$set("public", "vdiscard", function(vars, ...) {
 	}
 })
 
+# Discards specified values and removes their labels from variables.
 DS$set("public", "vstrip", function(vars, ...) {
 	self$vdiscard({{ vars }}, ...)
 	self$remove_labels({{ vars }}, ...)
 })
 
-
+# Clones variables with optional suffixes, labels, and repositioning.
 DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NULL, labels = NULL, move = T, suffix_position = "auto", else_copy = F) {
 	var_names = self$names({{ vars }})
 
@@ -290,7 +312,7 @@ DS$set("public", "nvclone", function(vars, ..., suffix = NULL, label_suffix = NU
 	invisible(new_vars)
 })
 
-
+# Creates mean scores for specified variables with optional suffixes and labels.
 DS$set("public", "make_means", function(vars, ..., suffix = "MEAN", label_suffix = "(MEAN)", move = T, suffix_position = "auto", vdiscard = NULL, else_copy = F) {
 	self$nvclone({{ vars }}, ..., suffix = suffix, label_suffix = label_suffix, move = move, suffix_position = suffix_position, else_copy = else_copy)
 
@@ -307,18 +329,22 @@ DS$set("public", "make_means", function(vars, ..., suffix = "MEAN", label_suffix
 	if (!is.null(vdiscard)) ds$vdiscard({{ new_vars }}, vdiscard)
 })
 
+# Creates NPS groups based on specified scoring criteria with optional suffixes and labels.
 DS$set("public", "make_nps0_groups", function(vars, suffix = "GROUP", label_suffix = "(GROUP)", move = T, labels = c("Detractors", "Neutrals", "Promoters"), suffix_position = "auto") {
 	self$nvclone({{ vars }}, suffix = suffix, label_suffix = label_suffix, labels = labels, move = move, suffix_position = suffix_position, 0:6 ~ 1, 7:8 ~ 2, 9:10 ~ 3)
 })
 
+# Creates NPS groups based on an alternative scoring criteria with optional suffixes and labels.
 DS$set("public", "make_nps1_groups", function(vars, suffix = "GROUP", label_suffix = "(GROUP)", move = T, labels = c("Detractors", "Neutrals", "Promoters"), suffix_position = "auto") {
 	self$nvclone({{ vars }}, suffix = suffix, label_suffix = label_suffix, labels = labels, move = move, suffix_position = suffix_position, 1:7 ~ 1, 8:9 ~ 2, 10:11 ~ 3)
 })
 
+# Creates NPS scores based on specified scoring criteria with optional suffixes and labels.
 DS$set("public", "make_nps0_scores", function(vars, suffix = "SCORE", label_suffix = "(SCORE)", move = T, suffix_position = "auto") {
 	self$make_means({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, suffix_position = suffix_position, 0:6 ~ -100, 7:8 ~ 0, 9:10 ~ 100)
 })
 
+# Creates NPS groups based on an alternative scoring criteria with optional suffixes and labels.
 DS$set("public", "make_nps1_scores", function(vars, suffix = "SCORE", label_suffix = "(SCORE)", move = T, suffix_position = "auto") {
 	self$make_means({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, suffix_position = suffix_position, 1:7 ~ -100, 8:9 ~ 0, 10:11 ~ 100)
 })

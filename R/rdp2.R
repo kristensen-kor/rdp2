@@ -7,6 +7,7 @@
 #' @field val_labels A named list for categorical variables, where each entry maps numeric codes to meaningful category labels (e.g., 1 = "Agree", 2 = "Disagree").
 #'
 #' @export
+#' @noRd
 DS = R6::R6Class("DS", list(
 	data = tibble(),
 	var_labels = list(),
@@ -17,6 +18,7 @@ DS = R6::R6Class("DS", list(
 
 # read/write
 
+# Reads an SPSS (.sav) file and loads the data and metadata into the DS object.
 DS$set("public", "get_spss", function(filename) {
 	start_time = Sys.time()
 	on.exit(cat("Read spss:", elapsed_fmt(Sys.time() - start_time), "\n"))
@@ -28,6 +30,7 @@ DS$set("public", "get_spss", function(filename) {
 	self$val_labels = df_raw |> map(\(x) attr(x, "labels", exact = T)) |> compact()
 })
 
+# Loads data and metadata from an RDS file into the DS object.
 DS$set("public", "get_rds", function(filename) {
 	save_data = readRDS(filename)
 
@@ -36,6 +39,7 @@ DS$set("public", "get_rds", function(filename) {
 	self$val_labels = save_data$val_labels
 })
 
+# Initializes the DS object, optionally loading data from a specified file.
 DS$set("public", "initialize", function(filename = NULL) {
 	if (!is.null(filename)) {
 		if (tools::file_ext(filename) == "") filename = paste0(filename, ".rds")
@@ -54,6 +58,7 @@ DS$set("public", "initialize", function(filename = NULL) {
 	}
 })
 
+# Saves the current data and metadata of the DS object to an RDS file.
 DS$set("public", "save", function(filename) {
 	if (!endsWith(tolower(filename), ".rds")) filename = paste0(filename, ".rds")
 
@@ -64,19 +69,24 @@ DS$set("public", "save", function(filename) {
 
 # basic
 
+# Active binding that returns the names of variables in the dataset.
 DS$set("active", "variables", \() names(self$data))
 
+# Active binding that returns the number of rows in the dataset.
 DS$set("active", "nrow", \() nrow(self$data))
 
+# Deprecated method
 DS$set("public", "get_col_names", \(...) {
 	warning("$get_col_names() is deprecated. Please use $names() instead", call. = F)
 	self$names(...)
 })
 
+# Retrieves the names of columns based on specified selection criteria.
 DS$set("public", "names", \(...) self$data |> select(...) |> names())
 
-# DS$set("public", "base_name", \(xs) self$names(base(xs)))
+# Gets the base names of columns after applying the base() function.
 DS$set("public", "base_name", \(...) self$names(base(...)))
+# DS$set("public", "base_name", \(xs) self$names(base(xs)))
 
 
 
@@ -85,8 +95,8 @@ DS$set("public", "base_name", \(...) self$names(base(...)))
 #' @export
 is_multiple = \(x) is.list(x) && all(vapply(x, is.numeric, logical(1)))
 # is_multiple = function(...) is.list(...)
-# is_multiple = is.list
 
+# Determines and returns the type of specified variables in the dataset.
 DS$set("public", "var_type", function(...) {
 	map_chr(self$names(...), \(var) {
 		if (is.numeric(self$data[[var]]) && var %in% names(self$val_labels)) {
@@ -104,14 +114,16 @@ DS$set("public", "var_type", function(...) {
 	})
 })
 
+# Checks if the specified variables are nominal (single or multiple categorical).
 DS$set("public", "is_nominal", \(vars) self$var_type(vars) %in% c("single", "multiple"))
 
 
 
 
-
+# Filters the dataset based on provided conditions.
 DS$set("public", "filter", \(...) self$data = self$data |> filter(...))
 
+# Retains only the specified variables in the dataset and associated metadata.
 DS$set("public", "keep", function(...) {
 	var_names = self$names(...)
 
@@ -120,6 +132,7 @@ DS$set("public", "keep", function(...) {
 	self$val_labels = self$val_labels[intersect(names(self$val_labels), var_names)]
 })
 
+# Removes the specified variables from the dataset and associated metadata.
 DS$set("public", "remove", function(...) {
 	var_names = self$names(...)
 
@@ -129,6 +142,7 @@ DS$set("public", "remove", function(...) {
 })
 
 
+# Renames variables in the dataset and updates associated metadata accordingly.
 DS$set("public", "rename", function(names_from, names_to) {
 	cur_names = self$variables
 
@@ -160,10 +174,12 @@ DS$set("public", "rename", function(names_from, names_to) {
 	names(self$val_labels)[renames$cur_names_mask] = renames$new_names
 })
 
+# Changes the order of specified variables in the dataset.
 DS$set("public", "move", function(..., after = NULL, before = NULL) {
 	self$data = self$data |> relocate(..., .after = {{ after }}, .before = {{ before }})
 })
 
+# Creates a clone of the DS object with data filtered by specified conditions.
 DS$set("public", "clone_if", function(...) {
 	tds = self$clone()
 	tds$filter(...)
@@ -174,15 +190,19 @@ DS$set("public", "clone_if", function(...) {
 
 # labels
 
+# Cleans up metadata by removing labels for variables no longer in the dataset.
 DS$set("public", "vacuum", function() {
 	self$var_labels = self$var_labels[names(self$var_labels) %in% self$variables]
 	self$val_labels = self$val_labels[names(self$val_labels) %in% self$variables]
 })
 
+# Retrieves the variable label for a specified variable.
 DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA_character_)
 
+# Retrieves the value labels for a specified variable (private method).
 DS$set("private", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
 
+# Retrieves variable labels for a set of specified variables.
 DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(self$get_var_label))
 
 conv_to_labels = function(labels) {
@@ -202,14 +222,17 @@ conv_to_labels = function(labels) {
 	}
 }
 
+# Adds a suffix to the variable labels of specified variables.
 DS$set("public", "add_label_suffix", function(vars, suffix, sep = " ") {
 	self$var_labels[vars] = map(self$var_labels[vars], \(label) paste(label, suffix, sep = sep))
 })
 
+# Sets or updates the label for a specified variable.
 DS$set("public", "set_var_label", function(var, label) {
 	self$var_labels[[var]] = label
 })
 
+# Sets or updates the value labels for specified variables.
 DS$set("public", "set_val_labels", function(vars, labels) {
 	if (is.character(labels)) labels = conv_to_labels(labels)
 
@@ -218,11 +241,13 @@ DS$set("public", "set_val_labels", function(vars, labels) {
 	}
 })
 
+# Sets both variable labels and value labels for a specified variable.
 DS$set("public", "set_labels", function(var, label, labels) {
 	self$set_var_label({{ var }}, label)
 	self$set_val_labels({{ var }}, labels)
 })
 
+# Adds new variable labels to specified variables.
 DS$set("public", "add_labels", function(vars, new_labels) {
 	if (is.character(new_labels)) new_labels = conv_to_labels(new_labels)
 
@@ -232,6 +257,7 @@ DS$set("public", "add_labels", function(vars, new_labels) {
 	}
 })
 
+# Removes specified value labels from specified variables.
 DS$set("public", "remove_labels", function(vars, ...) {
 	vars = self$names({{ vars }})
 	values = c(...)
@@ -246,7 +272,7 @@ DS$set("public", "remove_labels", function(vars, ...) {
 
 
 
-
+# Restructures the dataset by converting specified variable groups into individual cases.
 DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index_values = NULL, index_labels = NULL) {
 	start_time = Sys.time()
 	on.exit(cat("Restruct:", elapsed_fmt(Sys.time() - start_time), "\n"))
@@ -283,11 +309,14 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 })
 
 
+# Deprecated method.
 DS$set("public", "set_multiples", \() {
 	warning("$set_multiples() is deprecated. Please use $conv_multiples() instead", call. = F)
 	self$conv_multiples()
 })
 
+
+# Converts multiple indicator variables into single multiple-response variables.
 DS$set("public", "conv_multiples", function() {
 	start_time = Sys.time()
 	on.exit(cat("Convert multiples:", elapsed_fmt(Sys.time() - start_time), "\n"))
@@ -332,7 +361,7 @@ DS$set("public", "conv_multiples", function() {
 })
 
 
-
+# Provides a summary view of variables, including their names, labels, types, and value labels, optionally filtered by name or label.
 DS$set("public", "var_view", function(name = NULL, label = NULL) {
 	val_labels_format = function(xs) {
 		if (all(is.na(xs))) NA
@@ -368,6 +397,7 @@ DS$set("public", "var_view", function(name = NULL, label = NULL) {
 })
 
 
+# Checks variables for properties like uniqueness, emptiness, and validity based on specified criteria.
 DS$set("public", "var_check", function(name = NULL, label = NULL) {
 	res = self$var_view(name, label)
 
@@ -386,8 +416,7 @@ DS$set("public", "var_check", function(name = NULL, label = NULL) {
 
 
 
-
-
+# Exports a copy of the dataset, optionally selecting specific variables and formatting value labels for readability.
 DS$set("public", "export_copy", function(...) {
 	df = if (length(enquos(...)) == 0) self$data else self$data |> select(...)
 
