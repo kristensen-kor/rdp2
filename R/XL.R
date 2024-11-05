@@ -16,6 +16,7 @@ XL = R6::R6Class("XL", list(
 ))
 
 
+# Initializes a new Excel workbook with a specified filename.
 XL$set("public", "initialize", function(filename = NULL) {
 	if (!is.null(filename)) {
 		if (!endsWith(filename, ".xlsx")) filename = paste0(filename, ".xlsx")
@@ -58,6 +59,7 @@ XL_add = function(self, sheet, table) {
 	}
 }
 
+# Adds a new sheet with the provided table to the Excel workbook.
 XL$set("public", "add", \(sheet, table = NULL) XL_add(self, sheet, table))
 
 
@@ -85,7 +87,10 @@ XL_add_append = function(self, sheet, table, place, margin) {
 	}
 }
 
+# Appends a table to the right side of the specified sheet in the Excel workbook.
 XL$set("public", "add_right", \(sheet, table, margin = 1) XL_add_append(self, sheet, table, place = "right", margin))
+
+# Appends a table below the specified sheet in the Excel workbook.
 XL$set("public", "add_below", \(sheet, table, margin = 1) XL_add_append(self, sheet, table, place = "below", margin))
 
 
@@ -123,6 +128,7 @@ XL_add_contents = function(self) {
 	activeSheet(self$wb) = contents_sheet
 }
 
+# Adds a "Contents" sheet with hyperlinks to all other sheets in the workbook.
 XL$set("public", "add_contents", \() XL_add_contents(self))
 
 
@@ -133,8 +139,10 @@ XL_write = function(self) {
 	saveWorkbook(self$wb, self$filename, overwrite = T)
 }
 
+# Writes the Excel workbook to the specified filename, saving all changes.
 XL$set("public", "write", \() XL_write(self))
 
+# Adds the "Contents" sheet and then writes the workbook to file.
 XL$set("public", "add_contents_and_write", function() {
 	self$add_contents()
 	self$write()

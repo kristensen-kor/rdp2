@@ -1,5 +1,6 @@
 #' @include rdp2.R
 
+# Merges datasets together into one dataset.
 DS$set("public", "merge_data", function(...) {
 	start_time = Sys.time()
 	on.exit(cat("Merge time:", elapsed_fmt(Sys.time() - start_time), "seconds\n"))

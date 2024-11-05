@@ -2,6 +2,7 @@
 
 # add % total
 
+# Calculates quick table for one variable
 DS$set("public", "qtable", function(var, weight = NULL) {
 	var_name = self$names({{ var }})
 	vec = self$data[[var_name]]

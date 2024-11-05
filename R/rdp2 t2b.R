@@ -1,5 +1,6 @@
 #' @include rdp2.R
 
+# Internal method to recode values from source variables to target variables based on a condition and a specified value.
 DS$set("private", "recode_from_to_case", function(from_vars, to_vars, condition, value) {
 	walk2(from_vars, to_vars, \(var, new_var) {
 		mask = if (length(condition) == 1) self$data[[var]] == condition else self$data[[var]] %in% condition
@@ -7,6 +8,7 @@ DS$set("private", "recode_from_to_case", function(from_vars, to_vars, condition,
 	})
 })
 
+# Recodes values from source variables to target variables based on specified conditions and replacement values.
 DS$set("public", "recode_from_to", function(from_vars, to_vars, ...) {
 	cases = rlang::list2(...)
 
@@ -19,6 +21,7 @@ DS$set("public", "recode_from_to", function(from_vars, to_vars, ...) {
 	}
 })
 
+# Creates top-box and bottom-box variables from specified variables, assigning labels and optionally recoding based on value ranges.
 DS$set("public", "make_tb", function(vars, box_size = 2, ..., suffix = NULL, label_suffix = NULL, labels = NULL, is_reverse = F, range = NULL, move = T, suffix_position = "auto") {
 	# checks
 	types = self$var_type({{ vars }})
@@ -81,12 +84,13 @@ DS$set("public", "make_tb", function(vars, box_size = 2, ..., suffix = NULL, lab
 	if (length(rlang::list2(...)) > 0) self$recode_from_to(var_names, new_vars, ...)
 })
 
+# Creates T2B (Top-2 Box) variables from specified variables, assigning appropriate labels and handling recoding.
 DS$set("public", "make_t2b", function(vars, ..., suffix = "T2B", label_suffix = "(T2B)", labels = NULL, is_reverse = F, range = NULL, move = T, suffix_position = "auto") {
 	self$make_tb(vars = {{ vars }}, box_size = 2, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, is_reverse = is_reverse, range = range, move = move, suffix_position = suffix_position)
 })
 
+# Creates T3B (Top-3 Box) variables from specified variables, assigning appropriate labels and handling recoding.
 DS$set("public", "make_t3b", function(vars, ..., suffix = "T3B", label_suffix = "(T3B)", labels = NULL, is_reverse = F, range = NULL, move = T, suffix_position = "auto") {
 	self$make_tb(vars = {{ vars }}, box_size = 3, ..., suffix = suffix, label_suffix = label_suffix, labels = labels, is_reverse = is_reverse, range = range, move = move, suffix_position = suffix_position)
 })
 
-# 115

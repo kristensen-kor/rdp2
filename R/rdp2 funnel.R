@@ -1,5 +1,8 @@
 #' @include rdp2.R
 
+# The calc_funnel method creates a funnel analysis table by sequentially evaluating specified variables that represent different stages of a process.
+# It ensures that the value labels across these variables are consistent, calculates the distribution of responses at each stage, and computes the conversion rates between consecutive stages.
+# Additionally, the method can exclude certain codes, apply weights, and export the resulting funnel table to a file for reporting and further analysis.
 DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NULL, sheet = "", filename = NULL, caption = NULL) {
 	vars = self$names(...)
 

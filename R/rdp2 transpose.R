@@ -1,5 +1,7 @@
 #' @include rdp2.R
 
+# The vars_transpose method transforms a set of multiple-response variables with numeric suffixes into a single consolidated multiple-response variable.
+# It reorganizes the data by assigning new names and labels with a specified prefix, handles the exclusion of certain codes, and replaces the original variables with the newly transposed variable in the dataset.
 DS$set("public", "vars_transpose", function(vars, new_name, label_prefix, na_code, remove_code) {
 	vars = self$names({{ vars }})
 

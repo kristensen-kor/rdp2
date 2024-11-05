@@ -1,5 +1,6 @@
 #' @include rdp2.R
 
+# Exports dataset to SPSS .sav format.
 DS$set("public", "export_spss", function(sav_name, sps_name, CP1251 = F) {
 	start_time = Sys.time()
 	on.exit(cat("Export:", elapsed_fmt(Sys.time() - start_time), "\n"))

@@ -182,6 +182,10 @@ calc_rows_simple = function(vec, weights, row_values = NULL) {
 # add excel export?
 # change sheet = "" to sheet = NULL
 # how to treat duplicates in columns?
+
+# The calc_table method generates a cross-tabulation table based on specified row and column variables, optionally applying weights and filtering across different waves or subgroups.
+# It handles the aggregation of data, computes summary statistics, manages variable labels, and includes significance markers as specified.
+# Additionally, the method can export the resulting table to an Excel file if a filename is provided, facilitating easy reporting and analysis of survey or marketing data.
 DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", sheet = "", filename = NULL, open = F) {
 	start_time = Sys.time()
 	on.exit(cat("Calculating table", sheet, ":", elapsed_fmt(Sys.time() - start_time), "\n"))
