@@ -21,6 +21,7 @@ Collate:
     'rdp2 funnel.R'
     'rdp2 has.R'
     'rdp2 merge.R'
+    'rdp2 new vars.R'
     'rdp2 open.R'
     'rdp2 qtable.R'
     'rdp2 scale.R'
