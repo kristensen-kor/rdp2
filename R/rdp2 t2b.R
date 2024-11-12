@@ -3,7 +3,7 @@
 # Internal method to recode values from source variables to target variables based on a condition and a specified value.
 DS$set("private", "recode_from_to_case", function(from_vars, to_vars, condition, value) {
 	walk2(from_vars, to_vars, \(var, new_var) {
-		mask = if (length(condition) == 1) self$data[[var]] == condition else self$data[[var]] %in% condition
+		mask = has(self$data[[var]], condition)
 		self$data[[new_var]][mask] = value
 	})
 })
