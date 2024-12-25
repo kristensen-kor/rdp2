@@ -229,12 +229,14 @@ DS$set("public", "add_label_suffix", function(vars, suffix, sep = " ") {
 
 # Sets or updates the label for a specified variable.
 DS$set("public", "set_var_label", function(var, label) {
+	if (!(var %in% self$variables)) stop(sprintf("Variable %s not found.", var), call. = F)
 	self$var_labels[[var]] = label
 })
 
 # Sets or updates the value labels for specified variables.
-DS$set("public", "set_val_labels", function(vars, labels) {
-	if (is.character(labels)) labels = conv_to_labels(labels)
+DS$set("public", "set_val_labels", function(vars, ...) {
+	labels = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x) |> unlist()
+	# if (is.character(labels)) labels = conv_to_labels(labels)
 
 	for (var in self$names({{ vars }})) {
 		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
@@ -248,14 +250,20 @@ DS$set("public", "set_labels", function(var, label, labels) {
 })
 
 # Adds new variable labels to specified variables.
-DS$set("public", "add_labels", function(vars, new_labels) {
-	if (is.character(new_labels)) new_labels = conv_to_labels(new_labels)
+DS$set("public", "add_val_labels", function(vars, ...) {
+	labels_list = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x)
+	# if (is.character(new_labels)) new_labels = conv_to_labels(new_labels)
 
 	for (var in self$names({{ vars }})) {
-		labels = c(self$val_labels[[var]], new_labels)
-		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
+		for (new_labels in labels_list) {
+			labels = c(self$val_labels[[var]], new_labels)
+			self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
+		}
 	}
 })
+
+# Adds new variable labels to specified variables.
+DS$set("public", "add_labels", function(vars, ...) self$add_val_labels({{ vars }}, ...))
 
 # Removes specified value labels from specified variables.
 DS$set("public", "remove_labels", function(vars, ...) {

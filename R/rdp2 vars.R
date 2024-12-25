@@ -289,7 +289,7 @@ DS$set("public", "make_means", function(vars, ..., suffix = "MEAN", label_suffix
 
 	self$val_labels[new_vars] = NULL
 
-	if (!is.null(vdiscard)) ds$vdiscard({{ new_vars }}, vdiscard)
+	if (!is.null(vdiscard)) self$vdiscard({{ new_vars }}, vdiscard)
 })
 
 # Creates NPS groups based on specified scoring criteria with optional suffixes and labels.

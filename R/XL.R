@@ -148,6 +148,10 @@ XL$set("public", "add_contents_and_write", function() {
 	self$write()
 })
 
+# Open tables in Excel.
+XL$set("public", "open", function() {
+	shell.exec(self$filename)
+})
 
 
 # wrapper for simple one table exports

@@ -3,7 +3,7 @@
 # add block frames?
 
 #' @export
-rows_block = function(caption = NULL, vars = NULL, filter_var = NULL, filter_value = NULL) {
+rows_block = function(vars = NULL, filter_var = NULL, filter_value = NULL, caption = NULL) {
 	list(caption = caption, vars = vars, filter_var = filter_var, filter_value = filter_value) |> discard(is.null)
 }
 
@@ -205,6 +205,8 @@ DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL
 		weight = gen_free_name(tds$variables, "weight")
 		tds$nvn(weight, fill = 1)
 	}
+
+	# row_vars = self$names({{ row_vars }})
 
 	vars_used = c(
 		col_vars,

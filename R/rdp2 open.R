@@ -171,7 +171,7 @@ DS$set("public", "open_import", function(path, sheets = NULL, after = NULL) {
 		self$data = self$data |> left_join(res, by = params$key)
 
 		for (var in vars) {
-			if (is_multiple(self$data[[var]])) {
+			if (is.list(self$data[[var]])) {
 				self$data[[var]][map_lgl(self$data[[var]], is.null)] = list(numeric(0))
 				# self$data[[var]] = tidyr::replace_na(self$data[[var]], list(numeric(0)))
 			}
