@@ -34,10 +34,11 @@ DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 				values = labels
 			}
 
-			not_found = vec[!(vec %in% values)] |> unique()
-			if (length(not_found) > 0) {
+			not_found_counts = vec[!(vec %in% values)] |> as_tibble() |> count(value, sort = T)
+
+			if (nrow(not_found_counts) > 0) {
 				cat(var_name, "values not from the list:\n")
-				cat(paste(not_found, collapse = "\n"), "\n")
+				print(not_found_counts)
 			}
 		}
 
@@ -197,8 +198,10 @@ DS$set("public", "set_if", function(var, value, ..., label = NULL) {
 })
 
 # Sets values of a variable to NA based on provided logical conditions.
-DS$set("public", "set_na_if", function(var, ...) {
-	self$set_if(var, NA, ...)
+DS$set("public", "set_na_if", function(vars, ...) {
+	for (var in self$names({{ vars }})) {
+		self$set_if(var, NA, ...)
+	}
 })
 
 # Adds a value to a multiple-response variable based on provided conditions and optionally adds a label.

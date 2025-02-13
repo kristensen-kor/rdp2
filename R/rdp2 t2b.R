@@ -78,7 +78,11 @@ DS$set("public", "make_tb", function(vars, box_size = 2, ..., suffix = NULL, lab
 
 		private$recode_from_to_case(var_names, new_vars, top_boxes, if (!is_reverse) 1 else 3)
 		private$recode_from_to_case(var_names, new_vars, bottom_boxes, if (!is_reverse) 3 else 1)
-		if (!is.null(middle)) private$recode_from_to_case(var_names, new_vars, middle, 2)
+		if (!is.null(middle)) {
+			private$recode_from_to_case(var_names, new_vars, middle, 2)
+		} else {
+			self$remove_labels(all_of(new_vars), 2)
+		}
 	}
 
 	if (length(rlang::list2(...)) > 0) self$recode_from_to(var_names, new_vars, ...)

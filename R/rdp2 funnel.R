@@ -58,7 +58,7 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NUL
 	distr = vars |> map(\(var) private$calc_raw_table(var, weight))
 	bases = distr |> map_dbl(\(x) x[1])
 
-	if (!all(map_lgl(bases, \(x) isTRUE(all.equal(x, bases[1], tolerance = 1e-3))))) stop("Error: variables should have same bases")
+	if (!every(bases, \(x) isTRUE(all.equal(x, bases[1], tolerance = 1e-3)))) stop("Error: variables should have same bases")
 
 	res_table = tibble(
 		value = values[[1]],
@@ -67,6 +67,20 @@ DS$set("public", "calc_funnel", function(..., weight = NULL, exclude_codes = NUL
 	)
 
 	if (!is.null(exclude_codes)) res_table = res_table |> filter(!(value %in% exclude_codes))
+
+	for (i in 2:length(vars)) {
+		cur_var = vars[i]
+		prev_var = vars[i - 1]
+		replacement_indices = which(res_table[[cur_var]] > res_table[[prev_var]])
+
+		if (length(replacement_indices) > 0) {
+			for (x in res_table$label[replacement_indices]) {
+				warning(paste(cur_var, "is larger than", prev_var, "for", x), call. = F)
+			}
+			res_table[[cur_var]] = pmin(res_table[[cur_var]], res_table[[prev_var]])
+		}
+	}
+
 
 	for (i in seq_along(vars[-1])) {
 		conv = res_table[[vars[i + 1]]] /  res_table[[vars[i]]]
@@ -110,7 +124,7 @@ add_funnel_sheet = function(wb, sheet, data, caption = NULL, coords = NULL, plac
 	avg_brands[ids1] = totals
 
 	avg_convestions = rep(NA, length(vars) * 2 - 1)
-	avg_convestions_raw = totals[-1] / totals[-length(totals)]
+	avg_convestions_raw = tail(totals, -1) / head(totals, -1)
 	avg_convestions[ids2] = avg_convestions_raw
 
 	# styling
