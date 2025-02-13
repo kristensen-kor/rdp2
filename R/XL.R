@@ -32,7 +32,8 @@ XL$set("public", "initialize", function(filename = NULL) {
 })
 
 
-XL_add = function(self, sheet, table) {
+# Adds a new sheet with the provided table to the Excel workbook.
+XL$set("public", "add", \(sheet, table = NULL) function(self, sheet, table) {
 	if (is.null(table)) {
 		table = sheet
 		sheet = paste0("Sheet", length(self$sheets) + 1)
@@ -57,10 +58,7 @@ XL_add = function(self, sheet, table) {
 	} else {
 		stop("Unrecognized table format")
 	}
-}
-
-# Adds a new sheet with the provided table to the Excel workbook.
-XL$set("public", "add", \(sheet, table = NULL) XL_add(self, sheet, table))
+})
 
 
 XL_add_append = function(self, sheet, table, place, margin) {
