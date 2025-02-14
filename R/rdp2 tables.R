@@ -84,7 +84,7 @@ sign_mean_vec = function(n1, p1, sd1, n2, p2, sd2, sig = 0.05, min_base = 10) {
 	result
 }
 
-calc_sigs_first = function(res, rows, cols) {
+calc_sigs_first = function(res, rows, cols, sig) {
 	sig_ind_block = map(which(rows$type == "total"), \(x) {
 		indices = seq_along(rows$type)
 		indices = indices[-(1:x)]
@@ -98,7 +98,7 @@ calc_sigs_first = function(res, rows, cols) {
 			p1 = res[[x[2], 1]]
 			sd1 = res[[x[3], 1]]
 
-			s = sign_mean_vec(n1, p1, sd1, res[x[1], -1], res[x[2], -1], res[x[3], -1])
+			s = sign_mean_vec(n1, p1, sd1, res[x[1], -1], res[x[2], -1], res[x[3], -1], sig = sig)
 
 			res = rbind("", c("", s), "")
 		} else {
@@ -106,7 +106,7 @@ calc_sigs_first = function(res, rows, cols) {
 
 			s = do.call(rbind, map(x[-1], \(y) {
 				p1 = res[[y, 1]]
-				sign_pct_vec(n1, p1, res[x[1], -1], res[y, -1])
+				sign_pct_vec(n1, p1, res[x[1], -1], res[y, -1], sig = sig)
 			}))
 
 			res = rbind("", cbind("", s))
@@ -119,7 +119,7 @@ calc_sigs_first = function(res, rows, cols) {
 	}))
 }
 
-calc_sigs_wave = function(res, rows, cols) {
+calc_sigs_wave = function(res, rows, cols, sig) {
 	sig_ind_block = map(which(rows$type == "total"), \(x) {
 		indices = seq_along(rows$type)
 		indices = indices[-(1:x)]
@@ -133,7 +133,7 @@ calc_sigs_wave = function(res, rows, cols) {
 		if (rows$type[x[2]] == "mean") {
 			s = do.call(cbind, map(col_ind_blocks, \(col_ind_block) {
 				cbind("", do.call(cbind, map(col_ind_block, \(ci) {
-					sign_mean(res[x[1], ci - 1], res[[x[2], ci - 1]], res[[x[3], ci - 1]], res[x[1], ci], res[[x[2], ci]], res[[x[3], ci]])
+					sign_mean(res[x[1], ci - 1], res[[x[2], ci - 1]], res[[x[3], ci - 1]], res[x[1], ci], res[[x[2], ci]], res[[x[3], ci]], sig = sig)
 				})))
 			}))
 
@@ -142,7 +142,7 @@ calc_sigs_wave = function(res, rows, cols) {
 			s = do.call(rbind, map(x[-1], \(y) {
 				do.call(cbind, map(col_ind_blocks, \(col_ind_block) {
 					cbind("", do.call(cbind, map(col_ind_block, \(ci) {
-						sign_pct(res[x[1], ci - 1], res[[y, ci - 1]], res[x[1], ci], res[y, ci])
+						sign_pct(res[x[1], ci - 1], res[[y, ci - 1]], res[x[1], ci], res[y, ci], sig = sig)
 					})))
 				}))
 			}))
@@ -186,16 +186,16 @@ calc_rows_simple = function(vec, weights, row_values = NULL) {
 # The calc_table method generates a cross-tabulation table based on specified row and column variables, optionally applying weights and filtering across different waves or subgroups.
 # It handles the aggregation of data, computes summary statistics, manages variable labels, and includes significance markers as specified.
 # Additionally, the method can export the resulting table to an Excel file if a filename is provided, facilitating easy reporting and analysis of survey or marketing data.
-DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", sheet = "", filename = NULL, open = F) {
+DS$set("public", "calc_table", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", conf = 0.95, sheet = "", filename = NULL, open = F) {
 	row_vars = self$names({{ row_vars }})
-	self$calc_table_rblocks(row_vars, col_vars, weight, waves, sig, sheet, filename, open)
+	self$calc_table_rblocks(row_vars, col_vars, weight, waves, sig, conf, sheet, filename, open)
 })
 
 
 # The calc_table_blocks method generates a cross-tabulation table based on specified row and column variables, optionally applying weights and filtering across different waves or subgroups.
 # It handles the aggregation of data, computes summary statistics, manages variable labels, and includes significance markers as specified.
 # Additionally, the method can export the resulting table to an Excel file if a filename is provided, facilitating easy reporting and analysis of survey or marketing data.
-DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", sheet = "", filename = NULL, open = F) {
+DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weight = NULL, waves = NULL, sig = "first", conf = 0.95, sheet = "", filename = NULL, open = F) {
 	start_time = Sys.time()
 	on.exit(cat("Calculating table", sheet, ":", elapsed_fmt(Sys.time() - start_time), "\n"))
 
@@ -373,8 +373,8 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 
 	if (sig == "none") sigs = matrix("", nrow = nrow(res), ncol = ncol(res))
 
-	if (sig == "first" && is.null(waves)) sigs = calc_sigs_first(res, rows_tibble, cols_tibble)
-	if (sig == "first" && !is.null(waves)) sigs = calc_sigs_wave(res, rows_tibble, cols_tibble)
+	if (sig == "first" && is.null(waves)) sigs = calc_sigs_first(res, rows_tibble, cols_tibble, 1 - conf)
+	if (sig == "first" && !is.null(waves)) sigs = calc_sigs_wave(res, rows_tibble, cols_tibble, 1 - conf)
 
 
 
@@ -414,7 +414,7 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 })
 
 
-form_sheet = function(wb, res_tables, sheet, options_format = "num") {
+form_sheet = function(wb, res_tables, sheet, options_format = "num", coords = NULL, place = NULL, margin = -1) {
 	rows = res_tables$rows
 	cols = res_tables$cols
 	res = res_tables$res
@@ -422,10 +422,16 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 
 	# print(cols)
 
+	table_y = 0
+	off_x = 0
+	if (place == "below" && !is.null(coords)) table_y = coords$bottom + margin + 1
+	if (place == "right" && !is.null(coords)) off_x = coords$right + margin
+
 	rows_start = if ("wave" %in% names(cols)) 5 else 4
 	cols_start = 5
 	rows_pad = cols_start - 1
 	cols_pad = rows_start - 1
+
 
 	if (options_format == "num") res[which(rows$type == "single" | rows$type == "multiple"), ] = res[which(rows$type == "single" | rows$type == "multiple"), , drop = F] * 100
 
@@ -439,8 +445,8 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 
 
 	# styling
-	freezePane(wb, sheet = sheet, firstActiveRow = rows_start, firstActiveCol = cols_start)
-	setColWidths(wb, sheet = sheet, cols = 2:4, widths = c(3, 25, 8))
+	if (is.null(coords)) freezePane(wb, sheet = sheet, firstActiveRow = rows_start, firstActiveCol = cols_start)
+	setColWidths(wb, sheet = sheet, cols = off_x + 2:4, widths = c(3, 25, 8))
 
 	#EFEFEC
 	#F9F9F6
@@ -450,19 +456,19 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	dummy_res[which(rows$type == "total"), ] = T
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(fgFill = "#EFEFEC", border = "TopBottom", borderStyle = "thin", halign = "right", numFmt = "0")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2] + rows_pad)
 
 	# block format
 	dummy_res = matrix(F, ncol = ncol(res), nrow = nrow(res))
 	dummy_res[which(rows$type == "block"), ] = T
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(fgFill = "#CCDFFF")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2] + rows_pad)
 
 	# total < 10
 	style = createStyle(fgFill = "#F9F9F6")
 	cells = which(rows$type == "total" & res < 10, arr.ind = TRUE)
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad, stack = T)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2] + rows_pad, stack = T)
 
 	# percent values format
 	dummy_res = matrix(F, ncol = ncol(res), nrow = nrow(res))
@@ -470,42 +476,42 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(halign = "right", numFmt = "0.0")
 	if (options_format == "pct") style = createStyle(halign = "right", numFmt = "0.0%")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2] + rows_pad)
 
 	# mean format
 	dummy_res = matrix(F, ncol = ncol(res), nrow = nrow(res))
 	dummy_res[which(rows$type == "mean"), ] = T
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(halign = "right", numFmt = "0.0")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2] + rows_pad)
 
 	# total row format
 	dummy_res = matrix(F, ncol = ncol(rows), nrow = nrow(rows))
 	dummy_res[which(rows$type == "total"), ] = T
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(fgFill = "#EFEFEC", border = "TopBottom", borderStyle = "thin", halign = "left")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2], stack = T)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2], stack = T)
 
 	# filter row format
 	dummy_res = matrix(F, ncol = ncol(rows), nrow = nrow(rows))
 	dummy_res[which(rows$type == "filter"), 3] = T
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(textDecoration = c("bold", "italic"), halign = "left")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2], stack = T)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2], stack = T)
 
 	# block caption row format
 	dummy_res = matrix(F, ncol = ncol(rows), nrow = nrow(rows))
 	dummy_res[which(rows$type == "block"), 3] = T
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(textDecoration = "bold", halign = "left")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2], stack = T)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2], stack = T)
 
 	# block row format
 	dummy_res = matrix(F, ncol = ncol(rows), nrow = nrow(rows))
 	dummy_res[which(rows$type == "block"), ] = T
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(fgFill = "#CCDFFF", halign = "left")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2], stack = T)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2], stack = T)
 
 	# column borders
 	dummy_res = matrix(F, ncol = ncol(res), nrow = nrow(res))
@@ -516,44 +522,44 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	}
 	cells = which(dummy_res, arr.ind = TRUE)
 	style = createStyle(border = "Left", borderStyle = "thin")
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = cells[, 2] + rows_pad, stack = T)
+	addStyle(wb, sheet = sheet, style, rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2] + rows_pad, stack = T)
 
 	dummy_res = matrix(F, ncol = nrow(cols), nrow = ncol(cols))
 	dummy_res[, which(cols$var != "")] = T
 	cells = which(dummy_res, arr.ind = TRUE)
-	addStyle(wb, sheet = sheet, style, rows = cells[, 1], cols = cells[, 2] + rows_pad, stack = T)
+	addStyle(wb, sheet = sheet, style, rows = table_y + cells[, 1], cols = off_x + cells[, 2] + rows_pad, stack = T)
 
 	if ("wave" %in% names(cols)) {
 		dummy_res = matrix(F, ncol = nrow(cols), nrow = ncol(cols))
 		dummy_res[3:4, which(cols$val_label != "")] = T
 		cells = which(dummy_res, arr.ind = TRUE)
-		addStyle(wb, sheet = sheet, style, rows = cells[, 1], cols = cells[, 2] + rows_pad, stack = T)
+		addStyle(wb, sheet = sheet, style, rows = table_y + cells[, 1], cols = off_x + cells[, 2] + rows_pad, stack = T)
 	}
 
 
 	# columns
-	addStyle(wb, sheet = sheet, createStyle(fgFill = "#EFEFEC"), rows = 1:cols_pad, cols = seq_len(nrow(cols)) + rows_pad, gridExpand = T, stack = T)
-	addStyle(wb, sheet = sheet, createStyle(wrapText = T, valign = "top"), rows = cols_pad, cols = seq_len(nrow(cols)) + rows_pad, gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(fgFill = "#EFEFEC"), rows = (1 + table_y):cols_pad, cols = off_x + seq_len(nrow(cols)) + rows_pad, gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(wrapText = T, valign = "top"), rows = cols_pad, cols = off_x + seq_len(nrow(cols)) + rows_pad, gridExpand = T, stack = T)
 	# addStyle(wb, sheet = sheet, createStyle(wrapText = T, fgFill = "red"), rows = 3, cols = seq_len(nrow(cols)) + cols_start, gridExpand = T, stack = T)
 
 	#NET: bold
 	dummy_res = matrix(F, ncol = ncol(rows), nrow = nrow(rows))
 	dummy_res[which(rows$type == "multiple" & rows$val_label |> startsWith("NET:")), 3] = T
 	cells = which(dummy_res, arr.ind = T)
-	addStyle(wb, sheet = sheet, createStyle(textDecoration = "bold"), rows = cells[, 1] + cols_pad, cols = cells[, 2], stack = T)
+	addStyle(wb, sheet = sheet, createStyle(textDecoration = "bold"), rows = cells[, 1] + cols_pad, cols = off_x + cells[, 2], stack = T)
 
 
 	# col values border
-	addStyle(wb, sheet = sheet, createStyle(border = "Bottom"), rows = 2, cols = seq_len(nrow(cols)) + 4, gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(border = "Bottom"), rows = table_y + 2, cols = off_x + seq_len(nrow(cols)) + 4, gridExpand = T, stack = T)
 
 	# table border
-	addStyle(wb, sheet = sheet, createStyle(border = "Left"), rows = seq_len(nrow(rows) + cols_pad), cols = 1, gridExpand = T, stack = T)
-	addStyle(wb, sheet = sheet, createStyle(border = "Right"), rows = seq_len(nrow(rows) + cols_pad), cols = nrow(cols) + rows_pad, gridExpand = T, stack = T)
-	addStyle(wb, sheet = sheet, createStyle(border = "Top"), rows = 1, cols = seq_len(nrow(cols) + rows_pad), gridExpand = T, stack = T)
-	addStyle(wb, sheet = sheet, createStyle(border = "Bottom"), rows = nrow(rows) + cols_pad, cols = seq_len(nrow(cols) + rows_pad), gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(border = "Left"), rows = seq_len(nrow(rows) + cols_pad), cols = off_x + 1, gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(border = "Right"), rows = seq_len(nrow(rows) + cols_pad), cols = off_x + nrow(cols) + rows_pad, gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(border = "Top"), rows = 1 + table_y, cols = off_x + seq_len(nrow(cols) + rows_pad), gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(border = "Bottom"), rows = nrow(rows) + cols_pad, cols = off_x + seq_len(nrow(cols) + rows_pad), gridExpand = T, stack = T)
 
 	# top left corner
-	addStyle(wb, sheet = sheet, createStyle(fgFill = "#EFEFEC"), rows = 1:cols_pad, cols = 1:rows_pad, gridExpand = T, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(fgFill = "#EFEFEC"), rows = (1 + table_y):cols_pad, cols = off_x + 1:rows_pad, gridExpand = T, stack = T)
 
 	# low base
 	style = createStyle(fontColour = "#A6A6A6")
@@ -586,15 +592,15 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 
 	coords = which(res_logical, arr.ind = T)
 
-	addStyle(wb, sheet = sheet, style, rows = coords[, 1] + cols_pad, cols = coords[, 2] + rows_pad, stack = T)
+	addStyle(wb, sheet = sheet, style, rows = coords[, 1] + cols_pad, cols = off_x + coords[, 2] + rows_pad, stack = T)
 
 
 	# sigs
 	coords = which(matrix(sigs == "+", ncol = ncol(sigs)), arr.ind = TRUE)
-	addStyle(wb, sheet = sheet, createStyle(fgFill  = "#66e466"), rows = coords[, 1] + cols_pad, cols = coords[, 2] + rows_pad, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(fgFill  = "#66e466"), rows = coords[, 1] + cols_pad, cols = off_x + coords[, 2] + rows_pad, stack = T)
 
 	coords = which(matrix(sigs == "-", ncol = ncol(sigs)), arr.ind = TRUE)
-	addStyle(wb, sheet = sheet, createStyle(fgFill  = "#ed6666"), rows = coords[, 1] + cols_pad, cols = coords[, 2] + rows_pad, stack = T)
+	addStyle(wb, sheet = sheet, createStyle(fgFill  = "#ed6666"), rows = coords[, 1] + cols_pad, cols = off_x + coords[, 2] + rows_pad, stack = T)
 
 	# setRowHeights(wb, sheet = 1, rows = 3, heights = 38)
 	# addStyle(wb, sheet = 1, createStyle(wrapText = T), rows = seq_len(nrow(rows)) + rows_start, cols = 3, gridExpand = T, stack = T)
@@ -602,16 +608,18 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num") {
 	rows$type[rows$type %in% c("spacer", "block")] = ""
 
 	# write data
-	writeData(wb, sheet = sheet, xy = c(cols_start, rows_start), x = res, colNames = F)
-	writeData(wb, sheet = sheet, xy = c(1, rows_start), x = rows, colNames = F)
-	writeData(wb, sheet = sheet, xy = c(cols_start, 1), x = t(cols), colNames = F)
+	writeData(wb, sheet = sheet, xy = c(off_x + cols_start, rows_start), x = res, colNames = F)
+	writeData(wb, sheet = sheet, xy = c(off_x + 1, rows_start), x = rows, colNames = F)
+	writeData(wb, sheet = sheet, xy = c(off_x + cols_start, table_y + 1), x = t(cols), colNames = F)
 
 	idx = which(!is.na(rows$var))
 
-	tibble(
+	links = tibble(
 		row = idx + cols_pad,
 		text = paste0(rows[idx, ]$var, "|", rows[idx, ]$val_label)
 	) |> transpose()
+
+	list(coords = list(bottom = nrow(res) + 6 + rows_start, right = off_x + ncol(res) + cols_start - 1), links = links)
 }
 
 #' @export

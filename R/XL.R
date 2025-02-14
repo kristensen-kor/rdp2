@@ -33,7 +33,7 @@ XL$set("public", "initialize", function(filename = NULL) {
 
 
 # Adds a new sheet with the provided table to the Excel workbook.
-XL$set("public", "add", \(sheet, table = NULL) function(self, sheet, table) {
+XL$set("public", "add", \(sheet, table = NULL) {
 	if (is.null(table)) {
 		table = sheet
 		sheet = paste0("Sheet", length(self$sheets) + 1)
@@ -50,7 +50,9 @@ XL$set("public", "add", \(sheet, table = NULL) function(self, sheet, table) {
 	}
 
 	if (table$type == "ctable") {
-		self$links[[sheet]] = form_sheet(self$wb, table, sheet, options_format = self$options_format)
+		res = form_sheet(self$wb, table, sheet, options_format = self$options_format)
+		self$links[[sheet]] = res$links
+		self$coords[[sheet]] = res$coords
 	} else if (table$type == "funnel") {
 		res = add_funnel_sheet(self$wb, sheet, table, table$caption)
 		self$links[[sheet]] = c(self$links[[sheet]], res$links)
@@ -66,7 +68,7 @@ XL_add_append = function(self, sheet, table, place, margin) {
 	on.exit(cat(paste0("Added ", sheet, ":"), elapsed_fmt(Sys.time() - start_time), "\n"))
 
 	if (!is.null(table$filename)) stop("Can't add table with filename")
-	if (table$type == "ctable") stop("$add_right() and $add_below are not supported for ctables")
+	# if (table$type == "ctable") stop("$add_right() and $add_below are not supported for ctables")
 
 	if (!(sheet %in% self$sheets)) {
 		addWorksheet(self$wb, sheet)
@@ -74,8 +76,9 @@ XL_add_append = function(self, sheet, table, place, margin) {
 	}
 
 	if (table$type == "ctable") {
-		res = form_sheet(self$wb, table, sheet, options_format = self$options_format)
-		if (!(sheet %in% self$links)) self$links[[sheet]] = res$links
+		res = form_sheet(self$wb, table, sheet, options_format = self$options_format, coords = self$coords[[sheet]], place = place, margin = margin)
+		# if (!(sheet %in% self$links)) self$links[[sheet]] = res$links
+		self$coords[[sheet]] = res$coords
 	} else if (table$type == "funnel") {
 		res = add_funnel_sheet(self$wb, sheet, table, table$caption, coords = self$coords[[sheet]], place = place, margin = margin)
 		self$links[[sheet]] = c(self$links[[sheet]], res$links)
