@@ -420,12 +420,10 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num", coords = NU
 	res = res_tables$res
 	sigs = res_tables$sigs
 
-	# print(cols)
-
 	off_y = 0
 	off_x = 0
-	if (place == "below" && !is.null(coords)) off_y = coords$bottom + margin + 1
-	if (place == "right" && !is.null(coords)) off_x = coords$right + margin
+	if (!is.null(coords) && place == "below") off_y = coords$bottom + margin + 1
+	if (!is.null(coords) && place == "right") off_x = coords$right + margin
 
 	rows_start = if ("wave" %in% names(cols)) 5 else 4
 	cols_start = 5
@@ -483,7 +481,6 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num", coords = NU
 	style = createStyle(textDecoration = c("bold", "italic"), halign = "left")
 	styles[[length(styles) + 1]] = list(style = style, rows = which(rows$type == "filter") + cols_pad, cols = 3, stack = T, gridExpand = T)
 
-
 	# block caption row format (only column 3)
 	style = createStyle(textDecoration = "bold", halign = "left")
 	styles[[length(styles) + 1]] = list(style = style, rows = which(rows$type == "block") + cols_pad, cols = 3, stack = T, gridExpand = T)
@@ -510,7 +507,6 @@ form_sheet = function(wb, res_tables, sheet, options_format = "num", coords = NU
 		cells = expand.grid(row = 3:4, col = which(cols$val_label != ""))
 		styles[[length(styles) + 1]] = list(style = style, rows = cells$row, cols = cells$col + rows_pad, stack = T)
 	}
-
 
 	# columns
 	styles[[length(styles) + 1]] = list(style = createStyle(fgFill = "#EFEFEC"), rows = 1:cols_pad, cols = seq_len(nrow(cols)) + rows_pad, stack = T, gridExpand = T)
