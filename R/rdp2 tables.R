@@ -400,13 +400,15 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 
 	table = list(type = "ctable", res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs, sheet_name = sheet, filename = filename)
 
-	if (!is.null(filename)) {
-		temp_table = table
-		temp_table$filename = NULL
+	if (!is.null(filename) || open) {
+		if (is.null(filename)) filename = "temp.xlsx"
+		if (!endsWith(filename, ".xlsx")) filename = paste0(filename, ".xlsx")
+		table$filename = NULL
 
 		xls = XL$new(filename)
-		xls$add(temp_table)
+		xls$add(table)
 		xls$write()
+		table$filename = filename
 		if (open) shell.exec(filename)
 	}
 
