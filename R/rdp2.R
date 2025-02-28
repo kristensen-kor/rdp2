@@ -359,7 +359,7 @@ DS$set("public", "conv_multiples", function() {
 
 		self$data[[mdset]] = col_data
 		self$data = self$data |> relocate(all_of(mdset), .before = current_slice$var_name[1])
-		self$data = self$data[setdiff(names(self$data), current_slice$var_name)]
+		self$data[current_slice$var_name] = NULL
 
 		self$var_labels[[mdset]] = current_slice$prefix[1]
 		self$val_labels[[mdset]] = setNames(current_slice$id, current_slice$label)

@@ -51,17 +51,28 @@ DS$set("public", "scale_dense", function(vars) {
 	}
 })
 
-# Shifts the value labels of specified variables by a given amount starting from a defined threshold.
-DS$set("public", "scale_shift", function(vars, from, amount = 1) {
-	for (var in self$names({{ vars }})) {
-		mask = self$val_labels[[var]] >= from
-		self$val_labels[[var]][mask] = self$val_labels[[var]][mask] + amount
 
-		if (is_multiple(self$data[[var]])) {
-			self$data[[var]] = self$data[[var]] |> map(\(x) if_else(x >= from, x + amount, x))
+# Shifts the value labels of specified variables by a given amount starting from a defined threshold.
+DS$set("public", "scale_shift", function(vars, from = NULL, amount = 1) {
+	for (var in self$names({{ vars }})) {
+		if (is.null(from)) {
+			self$val_labels[[var]] = self$val_labels[[var]] + amount
+
+			if (is_multiple(self$data[[var]])) {
+				self$data[[var]] = self$data[[var]] |> map(\(x) x + amount)
+			} else {
+				self$data[[var]] = self$data[[var]] + amount
+			}
 		} else {
-			mask = self$data[[var]] >= from
-			self$data[[var]][mask] = self$data[[var]][mask] + amount
+			mask = self$val_labels[[var]] >= from
+			self$val_labels[[var]][mask] = self$val_labels[[var]][mask] + amount
+
+			if (is_multiple(self$data[[var]])) {
+				self$data[[var]] = self$data[[var]] |> map(\(x) if_else(x >= from, x + amount, x))
+			} else {
+				mask = self$data[[var]] >= from
+				self$data[[var]][mask] = self$data[[var]][mask] + amount
+			}
 		}
 	}
 })
