@@ -21,7 +21,7 @@ DS = R6::R6Class("DS", list(
 # Reads an SPSS (.sav) file and loads the data and metadata into the DS object.
 DS$set("public", "get_spss", function(filename) {
 	start_time = Sys.time()
-	on.exit(cat("Read spss:", elapsed_fmt(Sys.time() - start_time), "\n"))
+	on.exit(cat("Read spss:", elapsed_fmt(Sys.time() - start_time), sprintf(" (%s rows, %s variables)", self$nrow, length(self$variables)), "\n"))
 
 	df_raw = haven::read_spss(filename)
 
