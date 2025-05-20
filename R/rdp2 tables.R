@@ -178,8 +178,80 @@ calc_rows_simple = function(vec, weights, row_values = NULL) {
 	matrix(res)
 }
 
+validate_weight = function(tds, weight) {
+	if (is.null(weight)) {
+		weight = gen_free_name(tds$variables, "weight")
+		tds$nvs(weight, fill = 1)
+	} else {
+		if (!is.numeric(tds$data[[weight]])) stop("Weight variable can only be numeric.", call. = F)
+		if (any(is.na(tds$data[[weight]]))) stop("Weight variable can't contain NA.", call. = F)
+	}
+
+	weight
+}
+
+validate_col_vars = function(tds, col_vars) {
+	if (is.null(col_vars)) {
+		if ("total" %in% tds$variables) {
+			if (tds$var_labels$total != "Total" || tds$val_labels$total != c("Total" = 1) || !all(tds$data$total == 1)) stop("Cannot use existing total variable.", call. = F)
+		} else {
+			tds$add_total()
+		}
+		col_vars = "total"
+	}
+
+	mask = tds$var_type(all_of(col_vars)) %in% c("single", "multiple")
+
+	if (!all(mask)) {
+		warning("Omitting column variables that does not match any expected type: ", paste(col_vars[!mask], collapse = ", "), call. = F)
+		col_vars = col_vars[mask]
+		if (length(col_vars) == 0) stop("No valid column variables left.", call. = F)
+	}
+
+	col_vars
+}
+
+validate_waves = function(tds, waves) {
+	if (!is.null(waves) && !all(tds$var_type(all_of(waves)) %in% c("single", "multiple"))) stop("Waves variable can be only categorical type.", call. = F)
+
+	waves
+}
+
+validate_row_vars = function(tds, row_vars) {
+	row_vars = as.list(row_vars)
+
+	if (length(row_vars) == 0) stop("Please specify at least one row variable.", call. = F)
+
+	cleaned_rows = list()
+
+	for (var in row_vars) {
+		if (!is.list(var)) {
+			if (tds$var_type(all_of(var)) %in% c("single", "multiple", "numeric")) {
+				cleaned_rows = c(cleaned_rows, list(var))
+			} else {
+				warning("Omitting row variable that does not match any expected type: ", var, call. = F)
+			}
+		} else {
+			mask = tds$var_type(all_of(var$vars)) %in% c("single", "multiple", "numeric")
+
+			if (!all(mask)) {
+				warning("Omitting rows variables that does not match any expected type: ", paste(var$vars[!mask], collapse = ", "), call. = F)
+				var$vars = var$vars[mask]
+			}
+
+			if (length(var$vars) > 0) {
+				cleaned_rows = c(cleaned_rows, list(var))
+			}
+		}
+	}
+
+	if (length(cleaned_rows) == 0) stop("No valid rows variables left.", call. = F)
+
+	cleaned_rows
+}
+
+
 # add filter?
-# add excel export?
 # change sheet = "" to sheet = NULL
 # how to treat duplicates in columns?
 
@@ -201,21 +273,10 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 
 	tds = self$clone()
 
-	if (is.null(col_vars)) {
-		if ("total" %in% tds$variables) {
-			if (tds$var_labels$total != "Total" || tds$val_labels$total != c("Total" = 1) || !all(tds$data$total == 1)) stop("Cannot use existing total variable")
-		} else {
-			tds$add_total()
-		}
-		col_vars = "total"
-	}
-
-	if (is.null(weight)) {
-		weight = gen_free_name(tds$variables, "weight")
-		tds$nvn(weight, fill = 1)
-	}
-
-	# row_vars = self$names({{ row_vars }})
+	weight = validate_weight(tds, weight)
+	col_vars = validate_col_vars(tds, col_vars)
+	waves = validate_waves(tds, waves)
+	row_vars = validate_row_vars(tds, row_vars)
 
 	vars_used = c(
 		col_vars,
@@ -228,14 +289,12 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 
 	tds$data = tds$data |> select(all_of(vars_used))
 
+
+
 	tds$variables[!(tds$variables %in% names(tds$var_labels)) & tds$variables != weight] |> walk(\(x) {
 		cat("Warning, no label for:", x, "\n")
 		tds$var_labels[[x]] = x
 	})
-
-	# check if cols are nominal
-	# filter out text variables
-	# check for unique wave names
 
 	values_list = list()
 
