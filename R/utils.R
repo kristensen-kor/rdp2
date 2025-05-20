@@ -63,7 +63,7 @@ is_valid = function(xs) .is_valid(xs)
 
 .var_empty = function(...) UseMethod(".var_empty")
 .var_empty.list = function(xs) lengths(xs) == 0
-.var_empty.default = function(xs) is.na(xs)
+.var_empty.default = function(xs) is.na(xs) | xs == ""
 
 # Checks if variables are empty.
 var_empty = function(...) .var_empty(...)
@@ -90,7 +90,7 @@ case_match_vec_copy = function(xs, ...) {
 
 	for (case in cases) {
 		condition = rlang::eval_tidy(rlang::f_lhs(case))
-		value = rlang::f_rhs(case)
+		value = rlang::eval_tidy(rlang::f_rhs(case))
 		mask = if (length(condition) == 1) xs == condition else xs %in% condition
 		result[mask] = value
 	}

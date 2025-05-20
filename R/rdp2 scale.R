@@ -70,7 +70,7 @@ DS$set("public", "scale_shift", function(vars, from = NULL, amount = 1) {
 			if (is_multiple(self$data[[var]])) {
 				self$data[[var]] = self$data[[var]] |> map(\(x) if_else(x >= from, x + amount, x))
 			} else {
-				mask = self$data[[var]] >= from
+				mask = if_else(is.na(self$data[[var]]), F, self$data[[var]] >= from)
 				self$data[[var]][mask] = self$data[[var]][mask] + amount
 			}
 		}
@@ -92,7 +92,7 @@ DS$set("public", "scale_move", function(vars, ...) {
 		}
 	}
 
-	self$recode(vars, ...)
+	self$recode({{ vars }}, ...)
 
 	for (value in values) {
 		lhs = rlang::eval_tidy(rlang::f_lhs(value))
@@ -101,6 +101,6 @@ DS$set("public", "scale_move", function(vars, ...) {
 		for (var in self$names({{ vars }})) {
 			self$add_labels({{ var }}, setNames(rhs, names(which(self$val_labels[[var]] == lhs))))
 		}
-		self$remove_labels(vars, lhs)
+		self$remove_labels({{ vars }}, lhs)
 	}
 })

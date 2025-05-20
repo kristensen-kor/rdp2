@@ -147,9 +147,10 @@ DS$set("public", "rename", function(names_from, names_to) {
 	cur_names = self$variables
 
 	if (length(names_from) != length(names_to)) stop("'names_from' and 'names_to' vectors must have the same length")
-	if (any(duplicated(names_from))) stop("duplicates found in 'names_from' vector")
-	if (any(duplicated(names_to))) stop("duplicates found in 'names_to' vector")
-	if (any(setdiff(cur_names, names_from) %in% names_to)) stop("renaming would produce duplicated names")
+	if (any(duplicated(names_from))) stop(sprintf("duplicates found in 'names_from' vector: %s", paste(unique(names_from[duplicated(names_from)]), collapse = ", ")))
+	if (any(duplicated(names_to))) stop(sprintf("duplicates found in 'names_to' vector: %s", paste(unique(names_to[duplicated(names_to)]), collapse = ", ")))
+	conflict_names = intersect(setdiff(cur_names, names_from), names_to)
+	if (length(conflict_names) > 0) stop(sprintf("renaming would produce duplicated names: %s", paste(conflict_names, collapse = ", ")))
 
 	for (var_name in names_from) {
 		if (!(var_name %in% cur_names)) stop(sprintf("%s not found", var_name))
@@ -173,6 +174,19 @@ DS$set("public", "rename", function(names_from, names_to) {
 	renames = calc_renames(self$val_labels)
 	names(self$val_labels)[renames$cur_names_mask] = renames$new_names
 })
+
+# Renames variables by their base name in the dataset and updates associated metadata accordingly.
+DS$set("public", "rename_base", function(base, with) {
+	old_vars = self$base_name(base)
+	if (length(old_vars) == 0) stop(sprintf("No variables found for base \"%s\"", base))
+
+	existing_new_base = self$base_name(with)
+	if (length(existing_new_base) > 0) stop(sprintf("Cannot rename to base \"%s\" because these already exist: %s", with, paste(existing_new_base, collapse = ", ")))
+
+	new_vars = sub(base, with, old_vars, fixed = T)
+	self$rename(old_vars, new_vars)
+})
+
 
 # Changes the order of specified variables in the dataset.
 DS$set("public", "move", function(..., after = NULL, before = NULL) {
@@ -285,7 +299,7 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 	start_time = Sys.time()
 	on.exit(cat("Restruct:", elapsed_fmt(Sys.time() - start_time), "\n"))
 
-	cols_empty = \(df) rowSums(do.call(cbind, df |> map(var_empty))) == length(df)
+	cols_empty = \(df) Reduce(`&`, df |> map(var_empty))
 
 	cols_list = c(...)
 	all_cols = unlist(cols_list)
@@ -301,8 +315,9 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 		group = map_chr(cols_list, i)
 		group_df = self$data |> select(all_of(group))
 		selected_cols = !cols_empty(group_df)
-		base_df = base_df[selected_cols, ] |> mutate("{ index }" := index_value)
-		bind_cols(base_df, group_df[selected_cols, ])
+		base_df_slice = base_df[selected_cols, ]
+		base_df_slice[[index]] = index_value
+		bind_cols(base_df_slice, group_df[selected_cols, ])
 	}) |> list_rbind()
 
 	cols_list |> iwalk(\(cols, var_name) {
@@ -311,9 +326,11 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 	})
 
 	if (is.null(index_labels)) index_labels = as.character(index_values)
-	self$set_val_labels({{ index }}, index_labels)
+	self$set_val_labels({{ index }}, setNames(index_values, index_labels))
 
 	if (!is.null(index_label)) self$var_labels[[index]] = index_label
+
+	self$vacuum()
 })
 
 
