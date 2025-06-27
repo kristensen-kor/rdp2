@@ -86,9 +86,13 @@ DS$set("public", "transfer", function(vars, ...) {
 })
 
 # Recodes empty values in specified columns to a given value and optionally adds a label.
-DS$set("public", "recode_empty", function(cols, value, label = NULL) {
+DS$set("public", "recode_empty", function(cols, value, label = NULL, filter = NULL) {
+	filter_quosure = rlang::enquo(filter)
+	mask = rep(T, self$nrow)
+	if (!rlang::quo_is_null(filter_quosure)) mask = rlang::eval_tidy(filter_quosure, data = self$data)
+
 	recode_empty = function(var, value) {
-		var[var_empty(var)] = value
+		var[var_empty(var) & mask] = value
 		var
 	}
 
@@ -98,9 +102,9 @@ DS$set("public", "recode_empty", function(cols, value, label = NULL) {
 })
 
 # Recalculates empty values by discarding existing ones and recoding to a new value.
-DS$set("public", "recalc_empty", function(cols, value, label = NULL) {
+DS$set("public", "recalc_empty", function(cols, value, label = NULL, filter = NULL) {
 	self$vdiscard({{ cols }}, value)
-	self$recode_empty({{ cols }}, value, label)
+	self$recode_empty({{ cols }}, value, label, {{ filter }})
 })
 
 

@@ -24,6 +24,11 @@
 has = function(var, ...) {
 	values = c(...)
 
+	if (length(values) == 0) {
+		warning("No values provided to has() to check for presence.", call. = F)
+		return(rep(F, length(var)))
+	}
+
 	if (is.list(var)) {
 		if (length(values) == 1) {
 			has_list_single_cpp(var, values)
