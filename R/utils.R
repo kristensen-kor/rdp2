@@ -18,7 +18,11 @@ base = function(...) matches(paste(sprintf("^%s_\\d+$", c(...)), collapse = "|")
 
 #' Concatenates variable names with an underscore separator.
 #' @export
-paste_vars = function(...) expand.grid(..., KEEP.OUT.ATTRS = F, stringsAsFactors = F) |> pmap_chr(\(...) paste(..., sep = "_"))
+paste_vars = function(...) {
+	args = list(...)
+	grid = expand.grid(rev(args), KEEP.OUT.ATTRS = F, stringsAsFactors = F)
+	pmap_chr(grid[, rev(seq_along(args)), drop = F], \(...) paste(..., sep = "_"))
+}
 
 #' Filters and returns unique, sorted, non-NA values from a vector.
 #' @export
