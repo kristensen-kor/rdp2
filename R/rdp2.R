@@ -351,7 +351,7 @@ DS$set("public", "conv_multiples", function() {
 	mdset_data = tibble(var_name = self$variables) |>
 		filter(grepl("_[0-9]+$", var_name)) |>
 		filter(map_lgl(var_name, \(x) identical(self$val_labels[[x]], c("-" = 0, "+" = 1)))) |>
-		mutate(label = self$get_var_labels(var_name)) |>
+		mutate(label = self$get_var_labels(all_of(var_name))) |>
 		filter(!is.na(label)) |>
 		mutate(tokens = strsplit(label, sep, fixed = T)) |>
 		filter(lengths(tokens) > 1) |>

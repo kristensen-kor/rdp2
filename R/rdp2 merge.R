@@ -8,7 +8,7 @@ DS$set("public", "merge_data", function(...) {
 	dss = list(...)
 
 	cat("Starting merge process...\n")
-	cat("Primary DS - Variables:", length(self$variables), "; Rows:", self$nrow, "\n")
+	cat(sprintf("Primary DS - Variables: %d; Rows: %d\n", length(self$variables), self$nrow))
 
 	for (i in seq_along(dss)) {
 		ds = dss[[i]]
