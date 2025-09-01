@@ -449,7 +449,7 @@ DS$set("public", "export_copy", function(...) {
 
 	df = df |> mutate(across(all_of(mvars), \(var) {
 		values = self$prepare_val_labels(cur_column())
-		labels = sprintf("[%s] %s", values, names(values))
+		labels = sprintf("[%s] %s", values, chartr("\t\n", "  ", names(values)))
 
 		if (is_multiple(var)) {
 			var |> map_chr(\(x) paste0(labels[match(x, values)], collapse = "; "))
