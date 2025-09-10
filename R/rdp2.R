@@ -390,7 +390,7 @@ DS$set("public", "conv_multiples", function() {
 DS$set("public", "var_view", function(name = NULL, label = NULL) {
 	val_labels_format = function(xs) {
 		if (all(is.na(xs))) NA
-		else paste0("[", xs, "] ", names(xs)) |> paste(collapse = "; ")
+		else paste0("[", xs, "] ", chartr("\t\n", "  ", names(xs))) |> paste(collapse = "; ")
 	}
 
 	res = tibble(

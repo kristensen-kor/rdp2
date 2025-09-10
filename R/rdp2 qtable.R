@@ -30,7 +30,7 @@ DS$set("public", "qtable", function(var, weight = NULL) {
 		knitr::kable(
 			data.frame(
 				c("", row_values),
-				c("Total", names(row_values)),
+				c("Total", chartr("\t\n", "  ", names(row_values))),
 				c(res),
 				c(unweighted_counts)
 			),
