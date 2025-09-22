@@ -171,12 +171,15 @@ DS$set("public", "transfer_to", function(new_vars, from_vars, ...) {
 })
 
 # Clones a variable to a new variable with optional label and position.
-DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after = NULL) {
+DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after = NULL, filter) {
 	self$data = self$data |> mutate("{ new_var }" := .data[[from_var]], .after = {{ after }})
+
+	if (!missing(filter)) self$set_na_if({{ new_var }}, !{{ filter }})
 
 	self$var_labels[[new_var]] = label %||% self$var_labels[[from_var]]
 	self$val_labels[[new_var]] = self$val_labels[[from_var]]
 })
+
 
 
 # Internal method to set values based on logical conditions.
