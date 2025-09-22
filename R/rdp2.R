@@ -305,7 +305,10 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 	all_cols = unlist(cols_list)
 
 	if (length(unique(lengths(cols_list))) > 1) stop("All column groups must have the same length.")
-	if (!all(all_cols %in% self$variables)) stop("Not all variables are present in the dataframe.")
+	if (!all(all_cols %in% self$variables)) {
+		missing_vars = setdiff(all_cols, self$variables)
+		stop(sprintf("Not all variables are present in the dataframe. Missing: %s", paste(missing_vars, collapse = ", ")))
+	}
 
 	base_df = self$data |> select(-all_of(all_cols))
 
