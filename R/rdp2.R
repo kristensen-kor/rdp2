@@ -287,10 +287,17 @@ DS$set("public", "remove_labels", function(vars, ...) {
 	if (length(values) == 0) {
 		self$val_labels[vars] = NULL
 	} else {
-		self$val_labels[vars] = map(self$val_labels[vars], \(label) label[!label %in% values])
+		self$val_labels[vars] = map(self$val_labels[vars], \(label) label[!(label %in% values)])
 	}
 })
 
+# Removes empty value labels from specified variables.
+DS$set("public", "remove_empty_labels", function(...) {
+	self$names(...) |> walk(\(var) {
+		empty_ids = setdiff(self$val_labels[[var]], unlist(self$data[[var]]))
+		if (length(empty_ids) > 0) self$remove_labels(all_of(var), empty_ids)
+	})
+})
 
 
 
