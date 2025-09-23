@@ -34,6 +34,13 @@ DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL
 	private$nv_generic(name, label, labels, NULL, after, before, "multiple")
 })
 
+# Creates a new single-response filter subtype variable.
+DS$set("public", "nvf", function(name, label = NULL, labels = NULL, after = NULL, before = NULL, filter) {
+	if (missing(filter)) stop("Please specify filter condition", call. = F)
+	self$nvn(name, label, after = after, before = before)
+	self$set_if({{ name }}, 1, label = labels, {{ filter }})
+})
+
 # Adds a total single-select variable with a fixed value of 1.
 DS$set("public", "add_total", function(after = NULL, before = NULL) {
 	self$nvn("total", "Total", c("Total" = 1), fill = 1, after = after, before = before)

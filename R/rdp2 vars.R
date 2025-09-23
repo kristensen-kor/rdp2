@@ -189,6 +189,7 @@ set_if_lgl = function(...) UseMethod(".set_if_lgl")
 
 # Sets values of a variable based on provided logical conditions and optionally adds a label.
 DS$set("public", "set_if", function(var, value, ..., label = NULL) {
+	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
 	# condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
 	#
 	# self$data[[var]] = set_if_lgl(self$data[[var]], value, condition)
@@ -213,6 +214,7 @@ DS$set("public", "set_na_if", function(vars, ...) {
 
 # Adds a value to a multiple-response variable based on provided conditions and optionally adds a label.
 DS$set("public", "add_if", function(var, value, ..., label = NULL) {
+	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
 	if (!is_multiple(self$data[[var]])) stop("Error: Expecting variable of multiple type.")
 
 	if (length(enquos(...)) > 1) {
@@ -228,6 +230,7 @@ DS$set("public", "add_if", function(var, value, ..., label = NULL) {
 
 # Adds a net value to multiple-response variables based on provided conditions and optionally adds a label.
 DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
+	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
 	# condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
 
 	if (!all(self$data |> select({{ vars }}) |> map_lgl(is_multiple))) stop("Error: Expecting variables of multiple type.", call. = F)
