@@ -10,7 +10,7 @@ DS$set("private", "nv_generic", function(name, label = NULL, labels = NULL, fill
 		self$data[[name]] = rep(list(numeric(0)), self$nrow)
 	}
 
-	if (xor(!is.null(after), !is.null(before))) self$data = self$data |> relocate(all_of(name), .after = {{ after }}, .before = {{ before }})
+	if (xor(!rlang::quo_is_null(enquo(after)), !rlang::quo_is_null(enquo(before)))) self$data = self$data |> relocate(all_of(name), .after = {{ after }}, .before = {{ before }})
 	self$var_labels[[name]] = label
 	if (!is.null(labels)) {
 		self$set_val_labels({{ name }}, labels)
@@ -21,23 +21,23 @@ DS$set("private", "nv_generic", function(name, label = NULL, labels = NULL, fill
 
 # Creates a new single-response variable with specified attributes.
 DS$set("public", "nvn", function(name, label = NULL, labels = NULL, fill = NA_real_, after = NULL, before = NULL) {
-	private$nv_generic(name, label, labels, fill, after, before, "single")
+	private$nv_generic(name, label, labels, fill, {{ after }}, {{ before }}, "single")
 })
 
 # Creates a new numeric variable without value labels.
 DS$set("public", "nvs", function(name, label = NULL, fill = NA_real_, after = NULL, before = NULL) {
-	private$nv_generic(name, label, labels = NULL, fill, after, before, "single")
+	private$nv_generic(name, label, labels = NULL, fill, {{ after }}, {{ before }}, "single")
 })
 
 # Creates a new multiple-response variable with specified attributes.
 DS$set("public", "nvm", function(name, label = NULL, labels = NULL, after = NULL, before = NULL) {
-	private$nv_generic(name, label, labels, NULL, after, before, "multiple")
+	private$nv_generic(name, label, labels, NULL, {{ after }}, {{ before }}, "multiple")
 })
 
 # Creates a new single-response filter subtype variable.
 DS$set("public", "nvf", function(name, label = NULL, labels = NULL, after = NULL, before = NULL, filter) {
 	if (missing(filter)) stop("Please specify filter condition", call. = F)
-	self$nvn(name, label, after = after, before = before)
+	self$nvn(name, label, after = {{ after }}, before = {{ before }})
 	self$set_if({{ name }}, 1, label = labels, {{ filter }})
 })
 
