@@ -294,10 +294,10 @@ DS$set("public", "make_means", function(vars, ..., suffix = "MEAN", label_suffix
 
 	var_names = self$names({{ vars }})
 
-	if (length(var_names) > 1) {
-		new_vars = var_renamer(var_names, presuffix = suffix)
-	} else {
+	if (length(var_names) == 1 || suffix_position == "end") {
 		new_vars = var_renamer(var_names, suffix = suffix)
+	} else {
+		new_vars = var_renamer(var_names, presuffix = suffix)
 	}
 
 	self$val_labels[new_vars] = NULL

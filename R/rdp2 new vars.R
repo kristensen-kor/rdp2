@@ -43,12 +43,12 @@ DS$set("public", "nvf", function(name, label = NULL, labels = NULL, after = NULL
 
 # Adds a total single-select variable with a fixed value of 1.
 DS$set("public", "add_total", function(after = NULL, before = NULL) {
-	self$nvn("total", "Total", c("Total" = 1), fill = 1, after = after, before = before)
+	self$nvn("total", "Total", c("Total" = 1), fill = 1, after = {{ after }}, before = {{ before }})
 })
 
 # Adds a respondent ID (RID) variable with sequential numbering.
 DS$set("public", "add_rid", function(name = "RID", label = "Respondent ID", after = NULL, before = NULL) {
-	self$nvs(name, label, fill = row_number(), after = after, before = before)
+	self$nvs(name, label, fill = row_number(), after = {{ after }}, before = {{ before }})
 })
 
 
