@@ -460,7 +460,7 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 	table = list(type = "ctable", res = res, rows = rows_tibble, cols = cols_tibble, sigs = sigs, sheet_name = sheet, filename = filename)
 
 	if (!is.null(filename) || open) {
-		if (is.null(filename)) filename = "temp.xlsx"
+		if (is.null(filename)) filename = tempfile(fileext = ".xlsx")
 		if (!endsWith(filename, ".xlsx")) filename = paste0(filename, ".xlsx")
 		table$filename = NULL
 
