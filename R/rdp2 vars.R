@@ -49,7 +49,6 @@ DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 
 # Merges multiple variables into a single variable by combining their values.
 DS$set("public", "merge_vars", function(...) {
-	# var_names = list(...)
 	var_names = self$names(...)
 	self$data[[var_names[[1]]]] = var_names |> map(\(var_name) self$data[[var_name]]) |> pmap(\(...) c(...) |> mrcheck())
 })
@@ -86,25 +85,27 @@ DS$set("public", "transfer", function(vars, ...) {
 })
 
 # Recodes empty values in specified columns to a given value and optionally adds a label.
-DS$set("public", "recode_empty", function(cols, value, label = NULL, filter = NULL) {
+DS$set("public", "recode_empty", function(vars, value, label = NULL, filter = NULL) {
 	filter_quosure = rlang::enquo(filter)
-	mask = rep(T, self$nrow)
-	if (!rlang::quo_is_null(filter_quosure)) mask = rlang::eval_tidy(filter_quosure, data = self$data)
+	filter_mask = rep(T, self$nrow)
+	if (!rlang::quo_is_null(filter_quosure)) filter_mask = rlang::eval_tidy(filter_quosure, data = self$data)
 
-	recode_empty = function(var, value) {
-		var[var_empty(var) & mask] = value
-		var
+	for (var in self$names({{ vars }})) {
+		mask = filter_mask & var_empty(self$data[[var]])
+		if (is.list(self$data[[var]])) {
+			self$data[[var]][mask] = list(mrcheck(value))
+		} else {
+			self$data[[var]][mask] = value
+		}
 	}
 
-	self$data = self$data |> mutate(across({{ cols }}, \(var) recode_empty(var, value)))
-
-	if (!is.null(label)) self$add_labels({{ cols }}, setNames(value, label))
+	if (!is.null(label)) self$add_labels({{ vars }}, set_names(value, label))
 })
 
 # Recalculates empty values by discarding existing ones and recoding to a new value.
-DS$set("public", "recalc_empty", function(cols, value, label = NULL, filter = NULL) {
-	self$vdiscard({{ cols }}, value)
-	self$recode_empty({{ cols }}, value, label, {{ filter }})
+DS$set("public", "recalc_empty", function(vars, value, label = NULL, filter = NULL) {
+	self$vdiscard({{ vars }}, value)
+	self$recode_empty({{ vars }}, value, label, {{ filter }})
 })
 
 
@@ -186,12 +187,12 @@ DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after =
 DS$set("public", "set_if", function(var, value, condition, label = NULL) {
 	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
 
-	mask = rlang::eval_tidy(enquo(condition), data = df)
+	mask = rlang::eval_tidy(enquo(condition), data = self$data)
 
-	if (is.list(df[[var]])) {
-		df[[var]][mask] = list(mrcheck(value))
+	if (is.list(self$data[[var]])) {
+		self$data[[var]][mask] = list(mrcheck(value))
 	} else {
-		df[[var]][mask] = value
+		self$data[[var]][mask] = value
 	}
 
 	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
