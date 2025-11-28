@@ -24,17 +24,17 @@
 has = function(var, ...) {
 	values = c(...)
 
+	if (!is.null(var) && !is.list(var) && !is.numeric(var)) stop("var must be numeric or a list of numeric vectors.", call. = F)
+	if (!is.numeric(values)) stop("Values supplied to has() must be numeric scalars (no characters, logicals, lists, etc.).", call. = F)
+	if (!all(is.finite(values))) stop("Values supplied to has() must be finite numeric values (no NA, NaN, Inf).", call. = F)
+
 	if (length(values) == 0) {
 		warning("No values provided to has() to check for presence.", call. = F)
 		return(rep(F, length(var)))
 	}
 
 	if (is.list(var)) {
-		if (length(values) == 1) {
-			has_list_single_cpp(var, values)
-		} else {
-			has_list_multiple_cpp(var, values)
-		}
+		has_mc_cpp(var, values)
 	} else {
 		if (length(values) == 1) {
 			result = var == values
