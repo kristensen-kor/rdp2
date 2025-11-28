@@ -10,6 +10,18 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// add_to_mc_col_cpp
+List add_to_mc_col_cpp(List data, double value);
+RcppExport SEXP _rdp2_add_to_mc_col_cpp(SEXP dataSEXP, SEXP valueSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< double >::type value(valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(add_to_mc_col_cpp(data, value));
+    return rcpp_result_gen;
+END_RCPP
+}
 // has_mc_cpp
 LogicalVector has_mc_cpp(List list, NumericVector values);
 RcppExport SEXP _rdp2_has_mc_cpp(SEXP listSEXP, SEXP valuesSEXP) {
@@ -47,6 +59,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_rdp2_add_to_mc_col_cpp", (DL_FUNC) &_rdp2_add_to_mc_col_cpp, 2},
     {"_rdp2_has_mc_cpp", (DL_FUNC) &_rdp2_has_mc_cpp, 2},
     {"_rdp2_mrcheck_cpp", (DL_FUNC) &_rdp2_mrcheck_cpp, 1},
     {"_rdp2_add_to_mrset_cpp", (DL_FUNC) &_rdp2_add_to_mrset_cpp, 2},

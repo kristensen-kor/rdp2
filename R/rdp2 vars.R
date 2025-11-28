@@ -213,17 +213,13 @@ DS$set("public", "set_na_if", function(vars, ...) {
 })
 
 # Adds a value to a multiple-response variable based on provided conditions and optionally adds a label.
-DS$set("public", "add_if", function(var, value, ..., label = NULL) {
+DS$set("public", "add_if", function(var, value, condition, label = NULL) {
 	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
-	if (!is_multiple(self$data[[var]])) stop("Error: Expecting variable of multiple type.")
+	if (!is_multiple(self$data[[var]])) stop("Error: Expecting variable of multiple type.", call. = F)
 
-	if (length(enquos(...)) > 1) {
-		stop("Multiple logical conditions are not supported. Please provide only one condition.", call. = F)
-	}
+	mask = rlang::eval_tidy(enquo(condition), data = self$data)
 
-	condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
-
-	self$data[[var]] = self$data[[var]] |> modify_at(which(condition), \(x) add_to_mrset(x, value))
+	self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
 
 	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
 })
@@ -231,12 +227,12 @@ DS$set("public", "add_if", function(var, value, ..., label = NULL) {
 # Adds a net value to multiple-response variables based on provided conditions and optionally adds a label.
 DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
-	# condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
 
 	if (!all(self$data |> select({{ vars }}) |> map_lgl(is_multiple))) stop("Error: Expecting variables of multiple type.", call. = F)
 
 	for (var in self$names({{ vars }})) {
-		self$data[[var]] = self$data[[var]] |> modify_at(has(self$data[[var]], ...), \(x) add_to_mrset(x, value))
+		mask = has(self$data[[var]], ...)
+		self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
 	}
 
 	if (!is.null(label)) self$add_labels({{ vars }}, setNames(value, label))
