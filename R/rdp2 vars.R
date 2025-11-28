@@ -65,7 +65,7 @@ DS$set("public", "to_multiple", function(...) {
 DS$set("public", "to_single", function(...) {
 	for (var in self$names(...)) {
 		if (is_multiple(self$data[[var]])) {
-			if (!all(lengths(self$data[[var]]) <= 1)) stop(sprintf("Error, %s has more than 1 value", var))
+			if (any(lengths(self$data[[var]]) > 1)) stop(sprintf("Error, %s has more than 1 value", var))
 			self$data[[var]] = map_dbl(self$data[[var]], \(x) if (length(x) == 0) NA else x[[1]])
 		}
 	}
@@ -182,33 +182,25 @@ DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after =
 
 
 
-# Internal method to set values based on logical conditions.
-set_if_lgl = function(...) UseMethod(".set_if_lgl")
-.set_if_lgl.list = function(var, value, condition) modify_at(var, which(condition), \(x) mrcheck(value))
-.set_if_lgl.default = function(var, value, condition) replace(var, condition, value)
-
 # Sets values of a variable based on provided logical conditions and optionally adds a label.
-DS$set("public", "set_if", function(var, value, ..., label = NULL) {
+DS$set("public", "set_if", function(var, value, condition, label = NULL) {
 	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
-	# condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
-	#
-	# self$data[[var]] = set_if_lgl(self$data[[var]], value, condition)
 
-	if (length(enquos(...)) > 1) {
-		stop("Multiple logical conditions are not supported. Please provide only one condition.", call. = F)
+	mask = rlang::eval_tidy(enquo(condition), data = df)
+
+	if (is.list(df[[var]])) {
+		df[[var]][mask] = list(mrcheck(value))
+	} else {
+		df[[var]][mask] = value
 	}
-
-	condition = Reduce(`|`, map(enquos(...), \(cond) rlang::eval_tidy(cond, data = self$data)))
-
-	self$data[[var]] = set_if_lgl(self$data[[var]], value, condition)
 
 	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
 })
 
 # Sets values of a variable to NA based on provided logical conditions.
-DS$set("public", "set_na_if", function(vars, ...) {
+DS$set("public", "set_na_if", function(vars, condition) {
 	for (var in self$names({{ vars }})) {
-		self$set_if(var, NA, ...)
+		self$set_if(var, NA, {{ condition }})
 	}
 })
 
@@ -243,7 +235,7 @@ DS$set("public", "vdiscard", function(vars, ...) {
 	values = c(...)
 
 	for (var in self$names({{ vars }})) {
-		if (is_multiple(self$data[[var]])) {
+		if (is.list(self$data[[var]])) {
 			self$data[[var]] = self$data[[var]] |> map(\(x) x[is.na(match(x, values))])
 		} else {
 			self$data[[var]][has(self$data[[var]], values)] = NA
