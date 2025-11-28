@@ -1,23 +1,22 @@
-Type: Package
 Package: rdp2
 Title: R Data Processing
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: 
     person("Kristensen", "Kor", , "kristensen.kor@gmail.com", role = c("aut", "cre"))
-Description: A library for common data processing tasks and table outputs
+Description: A library for common data processing tasks and table outputs.
     Recoding variables, creating excel tebles,, multiple response
     questions support, working with weighted data support.
-License: GPL-3
-Imports:
+License: GPL (>= 3)
+Encoding: UTF-8
+normalize: TRUE
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: 
     dplyr,
     haven,
     openxlsx,
     purrr,
     Rcpp
-LinkingTo: 
-    Rcpp
-Encoding: UTF-8
-RoxygenNote: 7.3.2
 Collate: 
     'RcppExports.R'
     'rdp2.R'
@@ -37,3 +36,5 @@ Collate:
     'rdp2 vars.R'
     'rdp2-package.R'
     'utils.R'
+LinkingTo: 
+    Rcpp

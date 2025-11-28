@@ -9,13 +9,13 @@ has(var, ...)
 \arguments{
 \item{var}{A variable to check, which can be a list or a vector.}
 
-\item{...}{One or more values to check for within `var`.}
+\item{...}{One or more values to check for within \code{var}.}
 }
 \value{
-A logical vector indicating if the specified values are found within the elements of `var`. If a single value is provided, it checks for the presence of that value. If multiple values are provided, it checks for the presence of any of those values.
+A logical vector indicating if the specified values are found within the elements of \code{var}. If a single value is provided, it checks for the presence of that value. If multiple values are provided, it checks for the presence of any of those values.
 }
 \description{
-The `has` function checks if specific values are present within the elements of a given variable. The input variable can be a list or a vector.
+The \code{has} function checks if specific values are present within the elements of a given variable. The input variable can be a list or a vector.
 }
 \examples{
 # Check for a single value in a list
