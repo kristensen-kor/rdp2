@@ -22,9 +22,34 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mrcheck_cpp
+NumericVector mrcheck_cpp(NumericVector xs);
+RcppExport SEXP _rdp2_mrcheck_cpp(SEXP xsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type xs(xsSEXP);
+    rcpp_result_gen = Rcpp::wrap(mrcheck_cpp(xs));
+    return rcpp_result_gen;
+END_RCPP
+}
+// add_to_mrset_cpp
+NumericVector add_to_mrset_cpp(NumericVector vec, double value);
+RcppExport SEXP _rdp2_add_to_mrset_cpp(SEXP vecSEXP, SEXP valueSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type vec(vecSEXP);
+    Rcpp::traits::input_parameter< double >::type value(valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(add_to_mrset_cpp(vec, value));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rdp2_has_mc_cpp", (DL_FUNC) &_rdp2_has_mc_cpp, 2},
+    {"_rdp2_mrcheck_cpp", (DL_FUNC) &_rdp2_mrcheck_cpp, 1},
+    {"_rdp2_add_to_mrset_cpp", (DL_FUNC) &_rdp2_add_to_mrset_cpp, 2},
     {NULL, NULL, 0}
 };
 

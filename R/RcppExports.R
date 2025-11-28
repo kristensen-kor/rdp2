@@ -5,3 +5,11 @@ has_mc_cpp <- function(list, values) {
     .Call(`_rdp2_has_mc_cpp`, list, values)
 }
 
+mrcheck_cpp <- function(xs) {
+    .Call(`_rdp2_mrcheck_cpp`, xs)
+}
+
+add_to_mrset_cpp <- function(vec, value) {
+    .Call(`_rdp2_add_to_mrset_cpp`, vec, value)
+}
+

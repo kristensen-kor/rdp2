@@ -1,6 +1,5 @@
+# utils.R
 
-
-# aux
 
 
 #' @export
@@ -26,21 +25,14 @@ paste_vars = function(...) {
 
 #' Filters and returns unique, sorted, non-NA values from a vector.
 #' @export
-mrcheck = function(xs) {
-	xs = xs[!is.na(xs)]
-	if (length(xs) == 0) numeric(0) else unique(xs[order(xs)])
-}
+mrcheck = \(xs) mrcheck_cpp(xs)
+# reference implementation:
 # mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
 
 #' Adds a value to a multiple-response set, ensuring uniqueness and order.
 #' @export
-add_to_mrset = function(vec, value) {
-	if (is.na(value)) return(vec)
-	if (length(vec) == 0) return(value)
-	if (value %in% vec) return(vec)
-	if (value > max(vec, na.rm = TRUE)) return(c(vec, value))
-	c(vec, value) |> mrcheck()
-}
+add_to_mrset = \(vec, value) add_to_mrset_cpp(vec, value)
+# reference implementation:
 # add_to_mrset = function(var, value) c(var, value) |> mrcheck()
 
 
