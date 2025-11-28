@@ -14,10 +14,8 @@ DS$set("public", "export_spss", function(sav_name, sps_name, CP1251 = F) {
 
 	for (var_name in multiples) {
 		var_names = self$base_name(var_name)
-		if (length(var_names) > 0) stop(paste0(paste0(var_names, collapse = ", "), " names conflict"))
+		if (length(var_names) > 0) stop(paste0(paste0(var_names, collapse = ", "), " names conflict"), call. = F)
 	}
-
-	prefix_name = character(0)
 
 	df = self$data
 
@@ -25,23 +23,13 @@ DS$set("public", "export_spss", function(sav_name, sps_name, CP1251 = F) {
 		values = self$prepare_val_labels(var_name)
 
 		tdf = values |> set_names(paste_vars(var_name, values)) |> map(\(value) map_dbl(df[[var_name]], \(x) any(x == value))) |> bind_cols()
-
 		df = bind_cols(df, tdf)
-
-		if (length(values) == 1) {
-			vars = paste_vars(var_name, values)
-		} else {
-			vars = paste(paste_vars(var_name, values[1]), "TO", paste_vars(var_name, tail(values, 1)))
-		}
-
-		prefix_name = c(prefix_name, sprintf("%s ATTRIBUTE = PrefixName(\"%s\")", vars, quotes_escape(str_cleanup(self$get_var_label(var_name)))))
-
 		df = df |> relocate(all_of(paste_vars(var_name, values)), .after = all_of(var_name)) |> select(-all_of(var_name))
 
 		for (i in seq_along(values)) {
 			var = paste_vars(var_name, values[i])
 
-			attr(df[[var]], "label") = names(values)[i]
+			attr(df[[var]], "label") = str_cleanup(paste0(self$get_var_label(var_name), ": ", names(values)[i]))
 			attr(df[[var]], "labels") = c("-" = 0, "+" = 1)
 			attr(df[[var]], "format.spss") = "F1.0"
 			class(df[[var]]) = "haven_labelled"
@@ -53,8 +41,8 @@ DS$set("public", "export_spss", function(sav_name, sps_name, CP1251 = F) {
 
 	# add_labels
 	for (var in single_vars) {
-		attr(df[[var]], "label") = self$var_labels[[var]]
-		if (var %in% names(self$val_labels)) attr(df[[var]], "labels") = setNames(as.double(self$val_labels[[var]]), names(self$val_labels[[var]]))
+		attr(df[[var]], "label") = str_cleanup(self$var_labels[[var]])
+		if (var %in% names(self$val_labels)) attr(df[[var]], "labels") = set_names(as.double(self$val_labels[[var]]), str_cleanup(names(self$val_labels[[var]])))
 		attr(df[[var]], "format.spss") = "F2.0"
 		class(df[[var]]) = "haven_labelled"
 	}
@@ -79,10 +67,6 @@ DS$set("public", "export_spss", function(sav_name, sps_name, CP1251 = F) {
 	}
 
 	if (length(nominal_blocks) > 0) text = c(text, sprintf("VARIABLE LEVEL\n%s\n(NOMINAL).", paste(nominal_blocks, collapse = "\n")))
-
-	# mrset
-	if (length(prefix_name) > 0) text = c(text, sprintf("VARIABLE ATTRIBUTE\n%s.", sub("/VARIABLES", "VARIABLES", paste0(sprintf("/VARIABLES = %s", prefix_name), collapse = "\n"))))
-	if (length(prefix_name) > 0) text = c(text, "KK_MRSET AUTO.")
 
 	text = c(text, sprintf("SAVE OUTFILE = \"%s\".", sav_name))
 
