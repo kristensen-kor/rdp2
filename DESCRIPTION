@@ -33,6 +33,7 @@ Collate:
     'rdp2 tables internal.R'
     'rdp2 tables.R'
     'rdp2 transpose.R'
+    'rdp2 validate.R'
     'rdp2 vars.R'
     'rdp2-package.R'
     'utils.R'
