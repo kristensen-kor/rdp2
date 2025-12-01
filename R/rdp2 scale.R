@@ -99,7 +99,7 @@ DS$set("public", "scale_move", function(vars, ...) {
 		rhs = rlang::eval_tidy(rlang::f_rhs(value))
 
 		for (var in self$names({{ vars }})) {
-			self$add_labels({{ var }}, setNames(rhs, names(which(self$val_labels[[var]] == lhs))))
+			self$add_val_labels({{ var }}, setNames(rhs, names(which(self$val_labels[[var]] == lhs))))
 		}
 		self$remove_labels({{ vars }}, lhs)
 	}

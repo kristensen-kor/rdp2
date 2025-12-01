@@ -38,7 +38,6 @@ conv_to_labels = function(labels) {
 # Sets or updates the value labels for specified variables.
 DS$set("public", "set_val_labels", function(vars, ...) {
 	labels = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x) |> unlist()
-	# if (is.character(labels)) labels = conv_to_labels(labels)
 
 	for (var in self$names({{ vars }})) {
 		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
@@ -54,7 +53,6 @@ DS$set("public", "set_labels", function(var, label, labels) {
 # Adds new value labels to specified variables.
 DS$set("public", "add_val_labels", function(vars, ...) {
 	labels_list = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x)
-	# if (is.character(new_labels)) new_labels = conv_to_labels(new_labels)
 
 	for (var in self$names({{ vars }})) {
 		for (new_labels in labels_list) {
@@ -64,9 +62,6 @@ DS$set("public", "add_val_labels", function(vars, ...) {
 	}
 })
 
-# Adds new variable labels to specified variables.
-DS$set("public", "add_labels", function(vars, ...) self$add_val_labels({{ vars }}, ...))
-
 # Removes specified value labels from specified variables.
 DS$set("public", "remove_labels", function(vars, ...) {
 	vars = self$names({{ vars }})
@@ -75,7 +70,8 @@ DS$set("public", "remove_labels", function(vars, ...) {
 	if (length(values) == 0) {
 		self$val_labels[vars] = NULL
 	} else {
-		self$val_labels[vars] = map(self$val_labels[vars], \(label) label[!(label %in% values)])
+		self$val_labels[vars] = map(self$val_labels[vars], \(labels) labels[!(labels %in% values)])
+		self$val_labels[lengths(self$val_labels) == 0] = NULL
 	}
 })
 

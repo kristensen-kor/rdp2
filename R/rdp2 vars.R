@@ -99,7 +99,7 @@ DS$set("public", "recode_empty", function(vars, value, label = NULL, filter = NU
 		}
 	}
 
-	if (!is.null(label)) self$add_labels({{ vars }}, set_names(value, label))
+	if (!is.null(label)) self$add_val_labels({{ vars }}, set_names(value, label))
 })
 
 # Recalculates empty values by discarding existing ones and recoding to a new value.
@@ -195,7 +195,7 @@ DS$set("public", "set_if", function(var, value, condition, label = NULL) {
 		self$data[[var]][mask] = value
 	}
 
-	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
+	if (!is.null(label)) self$add_val_labels({{ var }}, setNames(value, label))
 })
 
 # Sets values of a variable to NA based on provided logical conditions.
@@ -214,7 +214,7 @@ DS$set("public", "add_if", function(var, value, condition, label = NULL) {
 
 	self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
 
-	if (!is.null(label)) self$add_labels({{ var }}, setNames(value, label))
+	if (!is.null(label)) self$add_val_labels({{ var }}, setNames(value, label))
 })
 
 # Adds a net value to multiple-response variables based on provided conditions and optionally adds a label.
@@ -228,7 +228,7 @@ DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 		self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
 	}
 
-	if (!is.null(label)) self$add_labels({{ vars }}, setNames(value, label))
+	if (!is.null(label)) self$add_val_labels({{ vars }}, setNames(value, label))
 })
 
 # Discards specified values from variables.
