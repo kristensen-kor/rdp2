@@ -8,7 +8,7 @@ bitcount = function(var, ...) {
 	if (length(values) == 0) {
 		lengths(var)
 	} else {
-		map_dbl(var, \(x) length(x[x %in% c(...)]))
+		map_dbl(var, \(x) length(x[x %in% values]))
 	}
 }
 
@@ -64,8 +64,8 @@ DS$set("public", "to_multiple", function(...) {
 DS$set("public", "to_single", function(...) {
 	for (var in self$names(...)) {
 		if (is_multiple(self$data[[var]])) {
-			if (any(lengths(self$data[[var]]) > 1)) stop(sprintf("Error, %s has more than 1 value", var))
-			self$data[[var]] = map_dbl(self$data[[var]], \(x) if (length(x) == 0) NA else x[[1]])
+			if (any(lengths(self$data[[var]]) > 1)) stop(glue("Error, {var} has more than 1 value"), call. = F)
+			self$data[[var]] = map_dbl(self$data[[var]], \(x) if (length(x) == 0) NA else x[1])
 		}
 	}
 })
@@ -184,38 +184,43 @@ DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after =
 
 
 # Sets values of a variable based on provided logical conditions and optionally adds a label.
-DS$set("public", "set_if", function(var, value, condition, label = NULL) {
+DS$set("public", "set_if", function(vars, value, condition, label = NULL) {
 	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
 
 	mask = rlang::eval_tidy(enquo(condition), data = self$data)
 
-	if (is.list(self$data[[var]])) {
-		self$data[[var]][mask] = list(mrcheck(value))
-	} else {
-		self$data[[var]][mask] = value
+	for (var in self$names({{ vars }})) {
+		if (is.list(self$data[[var]])) {
+			self$data[[var]][mask] = list(mrcheck(value))
+		} else {
+			self$data[[var]][mask] = value
+		}
 	}
 
-	if (!is.null(label)) self$add_val_labels({{ var }}, setNames(value, label))
+	if (!is.null(label)) self$add_val_labels({{ vars }}, setNames(value, label))
 })
 
 # Sets values of a variable to NA based on provided logical conditions.
 DS$set("public", "set_na_if", function(vars, condition) {
-	for (var in self$names({{ vars }})) {
-		self$set_if(var, NA, {{ condition }})
-	}
+	self$set_if(vars, NA, {{ condition }})
 })
 
 # Adds a value to a multiple-response variable based on provided conditions and optionally adds a label.
-DS$set("public", "add_if", function(var, value, condition, label = NULL) {
+DS$set("public", "add_if", function(vars, value, condition, label = NULL) {
+	var_names = self$names({{ vars }})
+
 	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
-	if (!is_multiple(self$data[[var]])) stop("Error: Expecting variable of multiple type.", call. = F)
+	if (!all(map_lgl(self$data[var_names], is.list))) stop("Error: Expecting variables of multiple type.", call. = F)
 
 	mask = rlang::eval_tidy(enquo(condition), data = self$data)
 
-	self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
+	for (var in var_names) {
+		self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
+	}
 
-	if (!is.null(label)) self$add_val_labels({{ var }}, setNames(value, label))
+	if (!is.null(label)) self$add_val_labels({{ vars }}, setNames(value, label))
 })
+
 
 # Adds a net value to multiple-response variables based on provided conditions and optionally adds a label.
 DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
