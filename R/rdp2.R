@@ -140,9 +140,6 @@ DS$set("public", "remove", function(...) {
 	self$vacuum()
 })
 
-
-
-
 # Changes the order of specified variables in the dataset.
 DS$set("public", "move", function(..., after = NULL, before = NULL) {
 	self$data = self$data |> relocate(..., .after = {{ after }}, .before = {{ before }})
@@ -156,98 +153,6 @@ DS$set("public", "clone_if", function(...) {
 })
 
 
-
-
-# labels
-
-# Retrieves the variable label for a specified variable.
-DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA_character_)
-
-# Retrieves the value labels for a specified variable (private method).
-DS$set("private", "get_val_labels", \(var) self$val_labels[[var]] %||% NA)
-
-# Retrieves variable labels for a set of specified variables.
-DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(self$get_var_label))
-
-conv_to_labels = function(labels) {
-	if (length(labels) == 1) {
-		lines = labels |> strsplit("\n") |> unlist() |> trimws()
-
-		valid_lines = grep("^\\d+\\s+\\w", lines, value = T)
-
-		if (length(valid_lines) == 0) stop("Parsed labels have length 0. Please check the input labels.", call. = F)
-
-		numbers = sub("^(\\d+).*", "\\1", valid_lines) |> as.numeric()
-		names = sub("^\\d+\\s+(.*)", "\\1", valid_lines)
-
-		setNames(numbers, names)
-	} else {
-		setNames(seq_along(labels), labels)
-	}
-}
-
-# Adds a suffix to the variable labels of specified variables.
-DS$set("public", "add_label_suffix", function(vars, suffix, sep = " ") {
-	self$var_labels[vars] = map(self$var_labels[vars], \(label) paste(label, suffix, sep = sep))
-})
-
-# Sets or updates the label for a specified variable.
-DS$set("public", "set_var_label", function(var, label) {
-	if (!(var %in% self$variables)) stop(sprintf("Variable %s not found.", var), call. = F)
-	self$var_labels[[var]] = label
-})
-
-# Sets or updates the value labels for specified variables.
-DS$set("public", "set_val_labels", function(vars, ...) {
-	labels = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x) |> unlist()
-	# if (is.character(labels)) labels = conv_to_labels(labels)
-
-	for (var in self$names({{ vars }})) {
-		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
-	}
-})
-
-# Sets both variable labels and value labels for a specified variable.
-DS$set("public", "set_labels", function(var, label, labels) {
-	self$set_var_label({{ var }}, label)
-	self$set_val_labels({{ var }}, labels)
-})
-
-# Adds new variable labels to specified variables.
-DS$set("public", "add_val_labels", function(vars, ...) {
-	labels_list = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x)
-	# if (is.character(new_labels)) new_labels = conv_to_labels(new_labels)
-
-	for (var in self$names({{ vars }})) {
-		for (new_labels in labels_list) {
-			labels = c(self$val_labels[[var]], new_labels)
-			self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
-		}
-	}
-})
-
-# Adds new variable labels to specified variables.
-DS$set("public", "add_labels", function(vars, ...) self$add_val_labels({{ vars }}, ...))
-
-# Removes specified value labels from specified variables.
-DS$set("public", "remove_labels", function(vars, ...) {
-	vars = self$names({{ vars }})
-	values = c(...)
-
-	if (length(values) == 0) {
-		self$val_labels[vars] = NULL
-	} else {
-		self$val_labels[vars] = map(self$val_labels[vars], \(label) label[!(label %in% values)])
-	}
-})
-
-# Removes empty value labels from specified variables.
-DS$set("public", "remove_empty_labels", function(...) {
-	self$names(...) |> walk(\(var) {
-		empty_ids = setdiff(self$val_labels[[var]], unlist(self$data[[var]]))
-		if (length(empty_ids) > 0) self$remove_labels(all_of(var), empty_ids)
-	})
-})
 
 
 
@@ -294,11 +199,6 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 })
 
 
-# Deprecated method.
-DS$set("public", "set_multiples", \() {
-	warning("$set_multiples() is deprecated. Please use $conv_multiples() instead", call. = F)
-	self$conv_multiples()
-})
 
 
 # Converts multiple indicator variables into single multiple-response variables.
@@ -349,8 +249,8 @@ DS$set("public", "conv_multiples", function() {
 # Provides a summary view of variables, including their names, labels, types, and value labels, optionally filtered by name or label.
 DS$set("public", "var_view", function(name = NULL, label = NULL) {
 	val_labels_format = function(xs) {
-		if (all(is.na(xs))) NA
-		else paste0("[", xs, "] ", chartr("\t\n", "  ", names(xs))) |> paste(collapse = "; ")
+		if (is.null(xs)) return(NA_character_)
+		paste(glue("[{xs}]"), chartr("\t\n", "  ", names(xs)), collapse = "; ")
 	}
 
 	res = tibble(
@@ -375,11 +275,12 @@ DS$set("public", "var_view", function(name = NULL, label = NULL) {
 		type = self$var_type(all_of(variable)),
 		type = ifelse(is.na(type), "type error", type),
 		type = ifelse(type == "single", NA_character_, type),
-		val_labels = variable |> map_chr(\(var_name) val_labels_format(private$get_val_labels(var_name)))
+		val_labels = variable |> map_chr(\(var_name) val_labels_format(self$val_labels[[var_name]]))
 	) |> select(pos, variable, type, label, everything())
 
 	res
 })
+
 
 
 # Checks variables for properties like uniqueness, emptiness, and validity based on specified criteria.
