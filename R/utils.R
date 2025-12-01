@@ -1,18 +1,12 @@
 # utils.R
 
 
-
+#' Formats elapsed time for display in seconds.
 #' @export
-base_name = function(xs) {
-	warning("base_name() is deprecated. Please use base() instead", call. = F)
-	matches(sprintf("^%s_\\d+$", xs))
-}
+elapsed_fmt = \(x) x |> as.numeric(units = "secs") |> round(1) |> paste0("s")
 
-#' Creates a regex pattern to match variables with specified prefixes followed by an underscore and digits.
-#' @export
-base = function(...) matches(paste(sprintf("^%s_\\d+$", c(...)), collapse = "|"))
-# base = function(xs) matches(sprintf("^%s_\\d+$", xs))
-
+# Wrap a string in quotes
+dquote = \(x) sprintf("\"%s\"", x)
 
 
 #' Concatenates variable names with an underscore separator.
@@ -36,16 +30,6 @@ add_to_mrset = \(vec, value) add_to_mrset_cpp(vec, value)
 # add_to_mrset = function(var, value) c(var, value) |> mrcheck()
 
 
-# #' @export
-# is_valid = function(...) UseMethod("is_valid")
-#
-# #' @export
-# #' @method is_valid list
-# is_valid.list = function(xs) lengths(xs) > 0
-#
-# #' @export
-# #' @method is_valid default
-# is_valid.default = function(xs) !is.na(xs)
 
 # Internal method to determine validity based on input type.
 .is_valid = function(...) UseMethod(".is_valid")
@@ -66,9 +50,6 @@ var_empty = function(...) .var_empty(...)
 
 
 
-# recode = function(...) UseMethod("recode")
-# recode.list = function(var, ...) map(var, \(x) case_match(x, ..., .default = x) |> mrcheck())
-# recode.default = function(var, ...) case_match(var, ..., .default = var)
 
 .recode = function(...) UseMethod(".recode")
 .recode.list = function(var, ...) map(var, \(x) case_match_vec_copy(x, ...) |> mrcheck())
@@ -102,18 +83,3 @@ case_match_vec_copy = function(xs, ...) {
 #' Transfers values of variables based on matching conditions.
 #' @export
 transfer = function(...) .transfer(...)
-
-
-#' Formats elapsed time for display in seconds or MM:SS format.
-#' @export
-elapsed_fmt = function(x) {
-	elapsed_in_seconds = as.numeric(x, units = "secs")
-	if (elapsed_in_seconds < 60) {
-		round(elapsed_in_seconds, 1)
-	} else {
-		sprintf("%02d:%04.1f", floor(elapsed_in_seconds / 60), round(elapsed_in_seconds %% 60, 1))
-	}
-}
-
-
-

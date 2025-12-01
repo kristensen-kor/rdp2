@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils.R
 \name{elapsed_fmt}
 \alias{elapsed_fmt}
-\title{Formats elapsed time for display in seconds or MM:SS format.}
+\title{Formats elapsed time for display in seconds.}
 \usage{
 elapsed_fmt(x)
 }
 \description{
-Formats elapsed time for display in seconds or MM:SS format.
+Formats elapsed time for display in seconds.
 }
