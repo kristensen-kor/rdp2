@@ -50,7 +50,17 @@ DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 # Merges multiple variables into a single variable by combining their values.
 DS$set("public", "merge_vars", function(...) {
 	var_names = self$names(...)
-	self$data[[var_names[[1]]]] = var_names |> map(\(var_name) self$data[[var_name]]) |> pmap(\(...) c(...) |> mrcheck())
+	if (length(var_names) == 0) stop("No variables supplied to merge_vars().", call. = F)
+
+	if (is.list(self$data[[var_names[[1]]]])) {
+		self$data[[var_names[[1]]]] = var_names |> map(\(var_name) self$data[[var_name]]) |> pmap(\(...) c(...) |> mrcheck())
+	} else {
+		if (!all(map_lgl(self$data[var_names], is.numeric))) stop("All supplied variables must be single-categorical numeric vectors.", call. = F)
+		vec = self$data[var_names] |> pmap(\(...) c(...) |> mrcheck())
+		if (any(lengths(vec) > 1)) stop("Supplied variables have conflicting values.", call. = F)
+		vec[lengths(vec) == 0] = list(NA)
+		self$data[[var_names[[1]]]] = unlist(vec)
+	}
 })
 
 # Converts specified variables to multiple-response type.
@@ -182,6 +192,23 @@ DS$set("public", "nvclone_to", function(new_var, from_var, label = NULL, after =
 })
 
 
+# Copies values from a source variable to one or more target variables, but only for rows where a logical condition is TRUE.
+DS$set("public", "replace_with", function(vars, source, condition) {
+	replacement = self$names({{ source }})
+	if (length(replacement) != 1) stop("Exactly one source variable must be supplied to $replace_with().", call. = F)
+
+	mask = rlang::eval_tidy(enquo(condition), data = self$data)
+
+	for (var in self$names({{ vars }})) {
+		if (is.list(self$data[[var]])) {
+			if (!is.list(self$data[[replacement]])) stop("Incompatible variable types: source variable is single-categorical but target is multiple-response.", call. = F)
+			self$data[[var]][mask] = self$data[[replacement]][mask]
+		} else {
+			if (is.list(self$data[[replacement]])) stop("Incompatible variable types: source variable is multiple-response but target is single-categorical.", call. = F)
+			self$data[[var]][mask] = self$data[[replacement]][mask]
+		}
+	}
+})
 
 # Sets values of a variable based on provided logical conditions and optionally adds a label.
 DS$set("public", "set_if", function(vars, value, condition, label = NULL) {

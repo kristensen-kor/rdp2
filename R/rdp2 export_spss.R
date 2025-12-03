@@ -41,7 +41,7 @@ DS$set("public", "export_spss", function(sav_name, sps_name, CP1251 = F) {
 
 	# add_labels
 	for (var in single_vars) {
-		attr(df[[var]], "label") = str_cleanup(self$var_labels[[var]])
+		if (var %in% names(self$var_labels)) attr(df[[var]], "label") = str_cleanup(self$var_labels[[var]])
 		if (var %in% names(self$val_labels)) attr(df[[var]], "labels") = set_names(as.double(self$val_labels[[var]]), str_cleanup(names(self$val_labels[[var]])))
 		attr(df[[var]], "format.spss") = "F2.0"
 		class(df[[var]]) = "haven_labelled"

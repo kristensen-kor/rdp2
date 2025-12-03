@@ -25,6 +25,7 @@ Collate:
     'rdp2 export_spss.R'
     'rdp2 funnel.R'
     'rdp2 has.R'
+    'rdp2 labels.R'
     'rdp2 merge.R'
     'rdp2 new vars.R'
     'rdp2 open.R'

@@ -10,7 +10,7 @@ DS$set("public", "open_export", function(key, ..., add = NULL, type = "multiple"
 
 	cols = self$names(...)
 
-	if (!is.null(alias) && length(alias) != length(cols)) stop("varaiables list does not match length of alias list")
+	if (!is.null(alias) && length(alias) != length(cols)) stop("varaiables list does not match length of alias list", call. = F)
 	if (is.null(alias)) alias = cols
 
 	exp_df = map2(cols, alias, \(x, y) {
@@ -23,7 +23,7 @@ DS$set("public", "open_export", function(key, ..., add = NULL, type = "multiple"
 		temp_df |> filter(text != "")
 	}) |> bind_rows()
 
-	exp_df = exp_df |> mutate(text = gsub("\n", "; ", gsub("\t", " ", text, fixed = T), fixed = T))
+	exp_df = exp_df |> mutate(text = gsub("\n", "; ", chartr("\t\"", "  ", text), fixed = T))
 
 	# labels block
 	if (!is.null(labels)) {
