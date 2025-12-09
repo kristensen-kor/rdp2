@@ -65,7 +65,7 @@ DS$set("public", "open_export", function(key, ..., add = NULL, type = "multiple"
 })
 
 
-DS$set("public", "open_import", function(path, sheets = NULL, after = NULL) {
+DS$set("public", "open_import", function(path, sheets = NULL, after = NULL, before = NULL) {
 	if (is.null(sheets)) sheets = getSheetNames(path)
 
 	added_vars = character(0)
@@ -190,6 +190,5 @@ DS$set("public", "open_import", function(path, sheets = NULL, after = NULL) {
 		added_vars = c(added_vars, vars)
 	}
 
-	if (!is.null(after)) self$move(all_of(added_vars), after = all_of(after))
+	if (!rlang::quo_is_null(enquo(after)) || !rlang::quo_is_null(enquo(before))) self$move(all_of(added_vars), after = {{ after }}, before = {{ before }})
 })
-
