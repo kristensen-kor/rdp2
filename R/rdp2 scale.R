@@ -104,3 +104,29 @@ DS$set("public", "scale_move", function(vars, ...) {
 		self$remove_labels({{ vars }}, lhs)
 	}
 })
+
+# Recodes value labels of specified variables based on provided mapping rules.
+DS$set("public", "scale_recode", function(vars, ...) {
+	values = rlang::list2(...)
+
+	for (value in values) {
+		lhs = rlang::eval_tidy(rlang::f_lhs(value))
+		rhs = rlang::eval_tidy(rlang::f_rhs(value))
+		if (length(lhs) != 1 || length(rhs) != 1) stop("Both sides of the '~' must be of length 1.", call. = F)
+	}
+
+	self$recode({{ vars }}, ...)
+
+	for (var in self$names({{ vars }})) {
+		if (var %in% names(self$val_labels)) {
+			labels = self$val_labels[[var]]
+			for (value in values) {
+				lhs = rlang::eval_tidy(rlang::f_lhs(value))
+				rhs = rlang::eval_tidy(rlang::f_rhs(value))
+				labels[self$val_labels[[var]] == lhs] = rhs
+			}
+			if (any(duplicated(labels))) warning("Conflicting value labels were overwritten: ", paste(unique(labels[duplicated(labels)]), collapse = ", "), call. = F)
+			self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
+		}
+	}
+})

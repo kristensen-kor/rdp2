@@ -170,6 +170,15 @@ DS$set("public", "nvs_src", function(vars, suffix = NULL, label_suffix = NULL, m
 })
 
 
+# Creates new numeric variable with bitcount of the source variable.
+DS$set("public", "nvs_src_bitcount", function(vars, ..., suffix = NULL, label_suffix = NULL, move = T, presuffix = NULL) {
+	var_names = self$names({{ vars }})
+	new_vars = self$nvs_src({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, presuffix = presuffix)
+
+	walk2(var_names, new_vars, \(var_name, new_var) self$compute(new_var, bitcount(.data[[var_name]], ...)))
+})
+
+
 # Transfers values from one set of variables to another.
 DS$set("public", "transfer_to", function(new_vars, from_vars, ...) {
 	walk2(
@@ -229,7 +238,7 @@ DS$set("public", "set_if", function(vars, value, condition, label = NULL) {
 
 # Sets values of a variable to NA based on provided logical conditions.
 DS$set("public", "set_na_if", function(vars, condition) {
-	self$set_if(vars, NA, {{ condition }})
+	self$set_if({{ vars }}, NA, {{ condition }})
 })
 
 # Adds a value to a multiple-response variable based on provided conditions and optionally adds a label.

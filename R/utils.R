@@ -52,22 +52,39 @@ var_empty = function(...) .var_empty(...)
 
 
 .recode = function(...) UseMethod(".recode")
-.recode.list = function(var, ...) map(var, \(x) case_match_vec_copy(x, ...) |> mrcheck())
-.recode.default = function(var, ...) case_match_vec_copy(var, ...)
+.recode.list = function(var, mapping) map(var, \(x) case_match_vec_copy(x, mapping) |> mrcheck())
+.recode.default = function(var, mapping) case_match_vec_copy(var, mapping)
 
 #' Recode function for variables based on their type.
 #' @export
-recode = function(...) .recode(...)
+recode = function(xs, ...) {
+	cases = rlang::list2(...)
 
+	n = length(cases)
+	if (n == 0) return(xs)
+
+	mapping = lapply(cases, \(x) {
+		rhs = rlang::eval_tidy(rlang::f_rhs(x))
+		lhs = rlang::eval_tidy(rlang::f_lhs(x))
+		if (!is.numeric(lhs)) stop("Left-hand side of recode rules must be numeric values (e.g., 1, 1:3), not logical or expressions.", call. = F)
+		if (length(rhs) != 1 || (!is.numeric(rhs) && !is.na(rhs))) stop("Right-hand side of a recode must be a numeric scalar (length 1).", call. = F)
+		list(lhs, rhs)
+	})
+
+	lhs_values = lapply(mapping, \(x) x[[1]]) |> unlist()
+	if (any(duplicated(lhs_values))) warning("Overlapping recode patterns detected for values: ", paste(unique(lhs_values[duplicated(lhs_values)]), collapse = ", "), call. = F)
+
+	.recode(xs, mapping)
+}
 
 # Performs case-based matching and replacement on a vector.
-case_match_vec_copy = function(xs, ...) {
-	cases = rlang::list2(...)
+case_match_vec_copy = function(xs, mapping) {
 	result = xs
 
-	for (case in cases) {
-		condition = rlang::eval_tidy(rlang::f_lhs(case))
-		value = rlang::eval_tidy(rlang::f_rhs(case))
+	for (x in mapping) {
+		condition = x[[1]]
+		value = x[[2]]
+
 		mask = if (length(condition) == 1) xs == condition else xs %in% condition
 		result[mask] = value
 	}
