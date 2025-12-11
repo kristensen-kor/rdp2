@@ -52,43 +52,44 @@ var_empty = function(...) .var_empty(...)
 
 
 .recode = function(...) UseMethod(".recode")
-.recode.list = function(var, mapping) map(var, \(x) case_match_vec_copy(x, mapping) |> mrcheck())
-.recode.default = function(var, mapping) case_match_vec_copy(var, mapping)
+.recode.list = function(var, lhs_list, rhs_vec) map(var, \(x) case_match_vec_copy(x, lhs_list, rhs_vec) |> mrcheck())
+.recode.default = function(var, lhs_list, rhs_vec) case_match_vec_copy(var, lhs_list, rhs_vec)
 
 #' Recode function for variables based on their type.
 #' @export
 recode = function(xs, ...) {
 	cases = rlang::list2(...)
-
 	n = length(cases)
+
 	if (n == 0) return(xs)
 
-	mapping = lapply(cases, \(x) {
-		rhs = rlang::eval_tidy(rlang::f_rhs(x))
-		lhs = rlang::eval_tidy(rlang::f_lhs(x))
+	lhs_list = vector("list", n)
+	rhs_vec = numeric(n)
+
+	for (i in seq_len(n)) {
+		lhs = rlang::eval_tidy(rlang::f_lhs(cases[[i]]))
+		rhs = rlang::eval_tidy(rlang::f_rhs(cases[[i]]))
+
 		if (!is.numeric(lhs)) stop("Left-hand side of recode rules must be numeric values (e.g., 1, 1:3), not logical or expressions.", call. = F)
 		if (length(rhs) != 1 || (!is.numeric(rhs) && !is.na(rhs))) stop("Right-hand side of a recode must be a numeric scalar (length 1).", call. = F)
-		list(lhs, rhs)
-	})
 
-	lhs_values = lapply(mapping, \(x) x[[1]]) |> unlist()
-	if (any(duplicated(lhs_values))) warning("Overlapping recode patterns detected for values: ", paste(unique(lhs_values[duplicated(lhs_values)]), collapse = ", "), call. = F)
+		lhs_list[[i]] = lhs
+		rhs_vec[i] = rhs
+	}
 
-	.recode(xs, mapping)
+	lhs_values = unlist(lhs_list)
+	if (any(duplicated(lhs_values))) stop("Overlapping recode patterns detected for values: ", paste(unique(lhs_values[duplicated(lhs_values)]), collapse = ", "), call. = F)
+
+	.recode(xs, lhs_list, rhs_vec)
 }
 
 # Performs case-based matching and replacement on a vector.
-case_match_vec_copy = function(xs, mapping) {
+case_match_vec_copy = function(xs, lhs_list, rhs_vec) {
 	result = xs
-
-	for (x in mapping) {
-		condition = x[[1]]
-		value = x[[2]]
-
-		mask = if (length(condition) == 1) xs == condition else xs %in% condition
-		result[mask] = value
+	for (i in seq_along(lhs_list)) {
+		mask = if (length(lhs_list[[i]]) == 1) xs == lhs_list[[i]] else xs %in% lhs_list[[i]]
+		result[mask] = rhs_vec[i]
 	}
-
 	result
 }
 
