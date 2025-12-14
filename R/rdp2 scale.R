@@ -119,14 +119,24 @@ DS$set("public", "scale_recode", function(vars, ...) {
 
 	for (var in self$names({{ vars }})) {
 		if (var %in% names(self$val_labels)) {
-			labels = self$val_labels[[var]]
+			new_labels = numeric()
+			old_labels = numeric()
+
 			for (value in values) {
 				lhs = rlang::eval_tidy(rlang::f_lhs(value))
 				rhs = rlang::eval_tidy(rlang::f_rhs(value))
-				labels[self$val_labels[[var]] == lhs] = rhs
+
+				x = self$val_labels[[var]][self$val_labels[[var]] == lhs]
+				if (length(x) == 1) {
+					old_labels = c(old_labels, lhs)
+					new_labels = c(new_labels, setNames(rhs, names(x)))
+				}
 			}
-			if (any(duplicated(labels))) warning("Conflicting value labels were overwritten: ", paste(unique(labels[duplicated(labels)]), collapse = ", "), call. = F)
-			self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
+
+			if (length(new_labels) > 0) {
+				self$remove_labels(all_of(var), old_labels)
+				self$add_val_labels(all_of(var), new_labels)
+			}
 		}
 	}
 })
