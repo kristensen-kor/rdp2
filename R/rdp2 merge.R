@@ -73,6 +73,13 @@ DS$set("public", "merge_data", function(...) {
 			if (col %in% names(ds$var_labels)) self$var_labels[[col]] = ds$var_labels[[col]]
 			if (col %in% names(ds$val_labels)) self$val_labels[[col]] = ds$val_labels[[col]]
 		}
+
+		setdiff_named = \(x, y) x[!(x %in% y)]
+
+		for (col in intersect(matched_cols, names(ds$val_labels))) {
+			new_labels = setdiff_named(ds$val_labels[[col]], self$val_labels[[var]])
+			if (length(new_labels) > 0) self$add_val_labels({{ col }}, new_labels)
+		}
 	}
 
 	self$data = self$data |> mutate(across(where(is.list), \(var) map(var, \(x) if (is.null(x)) numeric(0) else x)))
