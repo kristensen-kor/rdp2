@@ -273,14 +273,18 @@ DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
 })
 
 # Discards specified values from variables.
-DS$set("public", "vdiscard", function(vars, ...) {
+DS$set("public", "vdiscard", function(vars, ..., filter = NULL) {
+	filter_quosure = rlang::enquo(filter)
+	filter_mask = rep(T, self$nrow)
+	if (!rlang::quo_is_null(filter_quosure)) filter_mask = rlang::eval_tidy(filter_quosure, data = self$data)
+
 	values = c(...)
 
 	for (var in self$names({{ vars }})) {
 		if (is.list(self$data[[var]])) {
-			self$data[[var]] = self$data[[var]] |> map(\(x) x[is.na(match(x, values))])
+			self$data[[var]][filter_mask] = self$data[[var]][filter_mask] |> map(\(x) x[is.na(match(x, values))])
 		} else {
-			self$data[[var]][has(self$data[[var]], values)] = NA
+			self$data[[var]][filter_mask & has(self$data[[var]], values)] = NA
 		}
 	}
 })

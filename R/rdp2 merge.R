@@ -77,7 +77,7 @@ DS$set("public", "merge_data", function(...) {
 		setdiff_named = \(x, y) x[!(x %in% y)]
 
 		for (col in intersect(matched_cols, names(ds$val_labels))) {
-			new_labels = setdiff_named(ds$val_labels[[col]], self$val_labels[[var]])
+			new_labels = setdiff_named(ds$val_labels[[col]], self$val_labels[[col]])
 			if (length(new_labels) > 0) self$add_val_labels({{ col }}, new_labels)
 		}
 	}
