@@ -2,7 +2,7 @@
 
 # The vars_transpose method transforms a set of multiple-response variables with numeric suffixes into a single consolidated multiple-response variable.
 # It reorganizes the data by assigning new names and labels with a specified prefix, handles the exclusion of certain codes, and replaces the original variables with the newly transposed variable in the dataset.
-DS$set("public", "vars_transpose", function(vars, new_name, label_prefix, na_code, remove_code) {
+DS$set("public", "vars_transpose", function(vars, new_name, label_prefix, na_code, remove_code = NULL) {
 	vars = self$names({{ vars }})
 
 	ids_from = strsplit(vars, "_") |> map_chr(\(x) x[length(x)])
@@ -16,7 +16,7 @@ DS$set("public", "vars_transpose", function(vars, new_name, label_prefix, na_cod
 	ids_from = ids_from[order_indices]
 
 	values_from = self$val_labels[[vars[1]]]
-	values_from = values_from[!(values_from %in% remove_code)]
+	if (!is.null(remove_code)) values_from = values_from[!(values_from %in% remove_code)]
 
 	labels = setNames(ids_from, self$get_var_labels(all_of(vars)))
 

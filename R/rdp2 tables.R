@@ -254,6 +254,7 @@ validate_row_vars = function(tds, row_vars) {
 # add filter?
 # change sheet = "" to sheet = NULL
 # how to treat duplicates in columns?
+# fix 0 cols tables
 
 # The calc_table method generates a cross-tabulation table based on specified row and column variables, optionally applying weights and filtering across different waves or subgroups.
 # It handles the aggregation of data, computes summary statistics, manages variable labels, and includes significance markers as specified.
