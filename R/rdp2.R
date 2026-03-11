@@ -181,7 +181,7 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 		group_df = self$data |> select(all_of(group))
 		selected_cols = !cols_empty(group_df)
 		base_df_slice = base_df[selected_cols, ]
-		base_df_slice[[index]] = index_value
+		base_df_slice[[index]] = as.numeric(index_value)
 		bind_cols(base_df_slice, group_df[selected_cols, ])
 	}) |> list_rbind()
 
