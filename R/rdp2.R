@@ -202,11 +202,9 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 
 
 # Converts multiple indicator variables into single multiple-response variables.
-DS$set("public", "conv_multiples", function() {
+DS$set("public", "conv_multiples", function(sep = ": ") {
 	start_time = Sys.time()
 	on.exit(cat("Convert multiples:", elapsed_fmt(Sys.time() - start_time), "\n"))
-
-	sep = ": "
 
 	mdset_data = tibble(var_name = self$variables) |>
 		filter(grepl("_[0-9]+$", var_name)) |>
