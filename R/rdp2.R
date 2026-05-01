@@ -202,13 +202,13 @@ DS$set("public", "vars_to_cases", function(index, ..., index_label = NULL, index
 
 
 # Converts multiple indicator variables into single multiple-response variables.
-DS$set("public", "conv_multiples", function(sep = ": ") {
+DS$set("public", "conv_multiples", function(sep = ": ", labels = c("-" = 0, "+" = 1)) {
 	start_time = Sys.time()
 	on.exit(cat("Convert multiples:", elapsed_fmt(Sys.time() - start_time), "\n"))
 
 	mdset_data = tibble(var_name = self$variables) |>
 		filter(grepl("_[0-9]+$", var_name)) |>
-		filter(map_lgl(var_name, \(x) identical(self$val_labels[[x]], c("-" = 0, "+" = 1)))) |>
+		filter(map_lgl(var_name, \(x) identical(self$val_labels[[x]], labels))) |>
 		mutate(label = self$get_var_labels(all_of(var_name))) |>
 		filter(!is.na(label)) |>
 		mutate(tokens = strsplit(label, sep, fixed = T)) |>

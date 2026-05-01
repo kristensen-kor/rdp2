@@ -259,13 +259,17 @@ DS$set("public", "add_if", function(vars, value, condition, label = NULL) {
 
 
 # Adds a net value to multiple-response variables based on provided conditions and optionally adds a label.
-DS$set("public", "add_net", function(vars, value, ..., label = NULL) {
+DS$set("public", "add_net", function(vars, value, ..., label = NULL, filter = NULL) {
 	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
 
 	if (!all(self$data |> select({{ vars }}) |> map_lgl(is_multiple))) stop("Error: Expecting variables of multiple type.", call. = F)
 
+	filter_quosure = rlang::enquo(filter)
+	filter_mask = rep(T, self$nrow)
+	if (!rlang::quo_is_null(filter_quosure)) filter_mask = rlang::eval_tidy(filter_quosure, data = self$data)
+
 	for (var in self$names({{ vars }})) {
-		mask = has(self$data[[var]], ...)
+		mask = filter_mask & has(self$data[[var]], ...)
 		self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
 	}
 
