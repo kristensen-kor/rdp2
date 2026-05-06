@@ -212,11 +212,13 @@ DS$set("public", "conv_multiples", function(sep = ": ", labels = c("-" = 0, "+" 
 		mutate(label = self$get_var_labels(all_of(var_name))) |>
 		filter(!is.na(label)) |>
 		mutate(tokens = strsplit(label, sep, fixed = T)) |>
-		filter(lengths(tokens) > 1) |>
+		mutate(base_name = sub("_[0-9]+$", "", var_name)) |>
+		group_by(base_name) |>
+		filter(all(lengths(tokens) > 1)) |>
+		ungroup() |>
 		mutate(prefix = map_chr(tokens, \(x) x[1])) |>
 		mutate(label = map_chr(tokens, \(x) paste(x[-1], collapse = sep))) |>
 		select(-tokens) |>
-		mutate(base_name = sub("_[0-9]+$", "", var_name)) |>
 		mutate(id = sub(".*_([0-9]+)$", "\\1", var_name) |> as.numeric()) |>
 		group_by(base_name) |>
 		filter(n_distinct(prefix) == 1) |>
