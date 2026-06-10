@@ -2,7 +2,7 @@
 #'
 
 calc_raw_table_nominal = function(vec, weights, row_values) {
-	total_sum = sum(weights[is_valid(vec)])
+	total_sum = sum(weights[is_present(vec)])
 
 	if (total_sum == 0) {
 		c(total_sum, rep(NA, length(row_values)))
@@ -37,7 +37,7 @@ calc_raw_table_mean = function(vec, weights) {
 
 
 # calc_raw_counts = function(vec, row_values) {
-# 	c(sum(is_valid(vec)), vapply(row_values, \(x) sum(has(vec, x)), integer(1)))
+# 	c(sum(is_present(vec)), vapply(row_values, \(x) sum(has(vec, x)), integer(1)))
 # }
 
 calc_raw_counts = function(...) UseMethod(".calc_raw_counts")

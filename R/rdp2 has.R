@@ -25,7 +25,7 @@ has = function(var, ...) {
 	values = c(...)
 
 	if (!is.null(var) && !is.list(var) && !is.numeric(var)) stop("var must be numeric or a list of numeric vectors.", call. = F)
-	if (!is.numeric(values)) stop("Values supplied to has() must be numeric scalars (no characters, logicals, lists, etc.).", call. = F)
+	if (!is.numeric(values)) stop("Values supplied to has() must be numeric (no characters, logicals, lists, etc.).", call. = F)
 	if (!all(is.finite(values))) stop("Values supplied to has() must be finite numeric values (no NA, NaN, Inf).", call. = F)
 
 	if (length(values) == 0) {

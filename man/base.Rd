@@ -2,10 +2,10 @@
 % Please edit documentation in R/rdp2.R
 \name{base}
 \alias{base}
-\title{Returns a tidyselect matches() expression that selects variables with the given prefixes followed by _ and digits.}
+\title{Selects variables named PREFIX_1, PREFIX_2, ..., for one or more literal prefixes.}
 \usage{
 base(...)
 }
 \description{
-Returns a tidyselect matches() expression that selects variables with the given prefixes followed by _ and digits.
+Selects variables named PREFIX_1, PREFIX_2, ..., for one or more literal prefixes.
 }

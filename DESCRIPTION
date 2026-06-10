@@ -22,7 +22,11 @@ Collate:
     'RcppExports.R'
     'rdp2.R'
     'XL.R'
-    'rdp2 export_spss.R'
+    'assertions.R'
+    'utils.R'
+    'class-ds-where.R'
+    'ds-vars-set-add.R'
+    'rdp2 export.R'
     'rdp2 funnel.R'
     'rdp2 has.R'
     'rdp2 labels.R'
@@ -37,8 +41,9 @@ Collate:
     'rdp2 tables.R'
     'rdp2 transpose.R'
     'rdp2 validate.R'
+    'rdp2 var_view.R'
     'rdp2 vars.R'
+    'rdp2 vars_to_cases.R'
     'rdp2-package.R'
-    'utils.R'
 LinkingTo: 
     Rcpp

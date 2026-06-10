@@ -31,73 +31,99 @@ add_to_mrset = \(vec, value) add_to_mrset_cpp(vec, value)
 
 
 
+
+#' Check whether variable elements contain no response
+#'
+#' For ordinary vectors, missing values are empty. Empty strings are also
+#' considered empty for character vectors. For multiple-response list
+#' columns, elements containing no selected values are empty.
+#'
+#' @param x A variable vector or multiple-response list column.
+#'
+#' @return A logical vector indicating which elements are empty.
+#' @export
+is_empty = function(x) {
+	if (is.list(x)) {
+		lengths(x) == 0
+	} else if (is.character(x)) {
+		is.na(x) | x == ""
+	} else {
+		is.na(x)
+	}
+}
+
+
+#' Check whether variable elements contain a response
+#'
+#' This is the inverse of `is_empty()`.
+#'
+#' @inheritParams is_empty
+#'
+#' @return A logical vector indicating which elements contain a response.
+#' @export
+is_present = function(x) !is_empty(x)
+
+
+#' @export
+is_valid = function(x) {
+	.Deprecated("is_present", package = "rdp2")
+	is_present(x)
+}
+
+#' @export
+var_empty = function(x) {
+	.Deprecated("is_empty", package = "rdp2")
+	is_empty(x)
+}
+
+
+# legacy stuff
+
 # Internal method to determine validity based on input type.
-.is_valid = function(...) UseMethod(".is_valid")
-.is_valid.list = function(xs) lengths(xs) > 0
-.is_valid.default = function(xs) !is.na(xs)
+# .is_valid = function(...) UseMethod(".is_valid")
+# .is_valid.list = function(xs) lengths(xs) > 0
+# .is_valid.default = function(xs) !is.na(xs)
 
-#' Checks if elements are valid based on their type.
-#' @export
-is_valid = function(xs) .is_valid(xs)
+#' #' Checks if elements are valid based on their type.
+#' #' @export
+#' is_valid = function(xs) .is_valid(xs)
 
+# .var_empty = function(...) UseMethod(".var_empty")
+# .var_empty.list = function(xs) lengths(xs) == 0
+# .var_empty.default = function(xs) is.na(xs) | xs == ""
 
-.var_empty = function(...) UseMethod(".var_empty")
-.var_empty.list = function(xs) lengths(xs) == 0
-.var_empty.default = function(xs) is.na(xs) | xs == ""
-
-# Checks if variables are empty.
-var_empty = function(...) .var_empty(...)
-
+# # Checks if variables are empty.
+# var_empty = function(...) .var_empty(...)
 
 
 
-.recode = function(...) UseMethod(".recode")
-.recode.list = function(var, lhs_list, rhs_vec) map(var, \(x) case_match_vec_copy(x, lhs_list, rhs_vec) |> mrcheck())
-.recode.default = function(var, lhs_list, rhs_vec) case_match_vec_copy(var, lhs_list, rhs_vec)
 
-#' Recode function for variables based on their type.
-#' @export
-recode = function(xs, ...) {
-	cases = rlang::list2(...)
-	n = length(cases)
 
-	if (n == 0) return(xs)
 
-	lhs_list = vector("list", n)
-	rhs_vec = numeric(n)
+# Evaluates and validates a row condition against a dataset.
+eval_row_mask = function(condition, data) {
+	mask = rlang::eval_tidy(condition, data = data)
+	n = nrow(data)
 
-	for (i in seq_len(n)) {
-		lhs = rlang::eval_tidy(rlang::f_lhs(cases[[i]]))
-		rhs = rlang::eval_tidy(rlang::f_rhs(cases[[i]]))
-
-		if (!is.numeric(lhs)) stop("Left-hand side of recode rules must be numeric values (e.g., 1, 1:3), not logical or expressions.", call. = F)
-		if (length(rhs) != 1 || (!is.numeric(rhs) && !is.na(rhs))) stop("Right-hand side of a recode must be a numeric scalar (length 1).", call. = F)
-
-		lhs_list[[i]] = lhs
-		rhs_vec[i] = rhs
+	if (!is.logical(mask)) {
+		stop(glue("condition must evaluate to a logical vector."), call. = F)
 	}
 
-	lhs_values = unlist(lhs_list)
-	if (any(duplicated(lhs_values))) stop("Overlapping recode patterns detected for values: ", paste(unique(lhs_values[duplicated(lhs_values)]), collapse = ", "), call. = F)
-
-	.recode(xs, lhs_list, rhs_vec)
-}
-
-# Performs case-based matching and replacement on a vector.
-case_match_vec_copy = function(xs, lhs_list, rhs_vec) {
-	result = xs
-	for (i in seq_along(lhs_list)) {
-		mask = if (length(lhs_list[[i]]) == 1) xs == lhs_list[[i]] else xs %in% lhs_list[[i]]
-		result[mask] = rhs_vec[i]
+	if (length(mask) == 1) {
+		mask = rep(mask, n)
+	} else if (length(mask) != n) {
+		stop(glue("condition must have length 1 or {n}, not {length(mask)}."), call. = F)
 	}
-	result
+
+	mask[is.na(mask)] = F
+	mask
 }
 
-
-.transfer = function(...) UseMethod(".transfer")
-.transfer.list = function(var, ...) map(var, \(x) case_match(x, ...) |> mrcheck())
-.transfer.default = function(var, ...) case_match(var, ...)
-
-#' Transfers values of variables based on matching conditions.
-#' @export
-transfer = function(...) .transfer(...)
+# eval_row_mask that defaults to T on NULL condition
+eval_optional_row_mask = function(condition, data) {
+	if (rlang::quo_is_null(condition)) {
+		rep(T, nrow(data))
+	} else {
+		eval_row_mask(condition, data)
+	}
+}

@@ -80,13 +80,75 @@ DS$set("public", "to_single", function(...) {
 	}
 })
 
+
+.recode = function(...) UseMethod(".recode")
+.recode.list = function(var, lhs_list, rhs_vec) map(var, \(x) case_match_vec_copy(x, lhs_list, rhs_vec) |> mrcheck())
+.recode.default = function(var, lhs_list, rhs_vec) case_match_vec_copy(var, lhs_list, rhs_vec)
+
+# Recode function for variables based on their type.
+recode = function(xs, ...) {
+	cases = rlang::list2(...)
+	n = length(cases)
+
+	if (n == 0) return(xs)
+
+	lhs_list = vector("list", n)
+	rhs_vec = numeric(n)
+
+	for (i in seq_len(n)) {
+		lhs = rlang::eval_tidy(rlang::f_lhs(cases[[i]]))
+		rhs = rlang::eval_tidy(rlang::f_rhs(cases[[i]]))
+
+		if (!is.numeric(lhs)) stop("Left-hand side of recode rules must be numeric values (e.g., 1, 1:3), not logical or expressions.", call. = F)
+		if (length(rhs) != 1 || (!is.numeric(rhs) && !is.na(rhs))) stop("Right-hand side of a recode must be a numeric scalar (length 1).", call. = F)
+
+		lhs_list[[i]] = lhs
+		rhs_vec[i] = rhs
+	}
+
+	lhs_values = unlist(lhs_list)
+	if (any(duplicated(lhs_values))) stop("Overlapping recode patterns detected for values: ", paste(unique(lhs_values[duplicated(lhs_values)]), collapse = ", "), call. = F)
+
+	.recode(xs, lhs_list, rhs_vec)
+}
+
+# Performs case-based matching and replacement on a vector.
+case_match_vec_copy = function(xs, lhs_list, rhs_vec) {
+	result = xs
+	for (i in seq_along(lhs_list)) {
+		mask = if (length(lhs_list[[i]]) == 1) xs == lhs_list[[i]] else xs %in% lhs_list[[i]]
+		result[mask] = rhs_vec[i]
+	}
+	result
+}
+
+
+.transfer = function(...) UseMethod(".transfer")
+.transfer.list = function(var, ...) map(var, \(x) case_match(x, ...) |> mrcheck())
+.transfer.default = function(var, ...) case_match(var, ...)
+
+# Transfers values of variables based on matching conditions.
+transfer = function(...) .transfer(...)
+
+
+# add vec-based fast optimized version?
+
 # Recodes specified variables based on provided mapping.
-DS$set("public", "recode", function(vars, ...) {
+DS$set("public", "recode", function(vars, ..., filter = NULL) {
+	mask = eval_optional_row_mask(rlang::enquo(filter), self$data)
+
 	for (var in self$names({{ vars }})) {
-		self$data[[var]] = recode(self$data[[var]], ...)
+		# self$data[[var]] = recode(self$data[[var]], ...)
+		self$data[[var]][mask] = recode(self$data[[var]][mask], ...)
 	}
 })
 
+# Recodes specified variables based on provided mapping.
+DSWhere$set("public", "recode", \(vars, ...) {
+	private$ds$recode({{ vars }}, ..., filter = !!private$condition)
+})
+
+# remove?
 # Transfers values of specified variables based on provided conditions.
 DS$set("public", "transfer", function(vars, ...) {
 	for (var in self$names({{ vars }})) {
@@ -95,13 +157,13 @@ DS$set("public", "transfer", function(vars, ...) {
 })
 
 # Recodes empty values in specified columns to a given value and optionally adds a label.
-DS$set("public", "recode_empty", function(vars, value, label = NULL, filter = NULL) {
+DS$set("public", "fill_empty", function(vars, value, label = NULL, filter = NULL) {
 	filter_quosure = rlang::enquo(filter)
 	filter_mask = rep(T, self$nrow)
 	if (!rlang::quo_is_null(filter_quosure)) filter_mask = rlang::eval_tidy(filter_quosure, data = self$data)
 
 	for (var in self$names({{ vars }})) {
-		mask = filter_mask & var_empty(self$data[[var]])
+		mask = filter_mask & is_empty(self$data[[var]])
 		if (is.list(self$data[[var]])) {
 			self$data[[var]][mask] = list(mrcheck(value))
 		} else {
@@ -112,10 +174,13 @@ DS$set("public", "recode_empty", function(vars, value, label = NULL, filter = NU
 	if (!is.null(label)) self$add_val_labels({{ vars }}, set_names(value, label))
 })
 
+# Alias for $fill_empty()
+DS$set("public", "recode_empty", \(...) self$fill_empty(...))
+
 # Recalculates empty values by discarding existing ones and recoding to a new value.
 DS$set("public", "recalc_empty", function(vars, value, label = NULL, filter = NULL) {
-	self$vdiscard({{ vars }}, value)
-	self$recode_empty({{ vars }}, value, label, {{ filter }})
+	self$vdiscard({{ vars }}, value, filter = {{ filter }})
+	self$fill_empty({{ vars }}, value, label, {{ filter }})
 })
 
 
@@ -219,68 +284,12 @@ DS$set("public", "replace_with", function(vars, source, condition) {
 	}
 })
 
-# Sets values of a variable based on provided logical conditions and optionally adds a label.
-DS$set("public", "set_if", function(vars, value, condition, label = NULL) {
-	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
-
-	mask = rlang::eval_tidy(enquo(condition), data = self$data)
-
-	for (var in self$names({{ vars }})) {
-		if (is.list(self$data[[var]])) {
-			self$data[[var]][mask] = list(mrcheck(value))
-		} else {
-			self$data[[var]][mask] = value
-		}
-	}
-
-	if (!is.null(label)) self$add_val_labels({{ vars }}, setNames(value, label))
-})
-
-# Sets values of a variable to NA based on provided logical conditions.
-DS$set("public", "set_na_if", function(vars, condition) {
-	self$set_if({{ vars }}, NA, {{ condition }})
-})
-
-# Adds a value to a multiple-response variable based on provided conditions and optionally adds a label.
-DS$set("public", "add_if", function(vars, value, condition, label = NULL) {
-	var_names = self$names({{ vars }})
-
-	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
-	if (!all(map_lgl(self$data[var_names], is.list))) stop("Error: Expecting variables of multiple type.", call. = F)
-
-	mask = rlang::eval_tidy(enquo(condition), data = self$data)
-
-	for (var in var_names) {
-		self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
-	}
-
-	if (!is.null(label)) self$add_val_labels({{ vars }}, setNames(value, label))
-})
-
-
-# Adds a net value to multiple-response variables based on provided conditions and optionally adds a label.
-DS$set("public", "add_net", function(vars, value, ..., label = NULL, filter = NULL) {
-	if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)
-
-	if (!all(self$data |> select({{ vars }}) |> map_lgl(is_multiple))) stop("Error: Expecting variables of multiple type.", call. = F)
-
-	filter_quosure = rlang::enquo(filter)
-	filter_mask = rep(T, self$nrow)
-	if (!rlang::quo_is_null(filter_quosure)) filter_mask = rlang::eval_tidy(filter_quosure, data = self$data)
-
-	for (var in self$names({{ vars }})) {
-		mask = filter_mask & has(self$data[[var]], ...)
-		self$data[[var]][mask] = add_to_mc_col_cpp(self$data[[var]][mask], value)
-	}
-
-	if (!is.null(label)) self$add_val_labels({{ vars }}, setNames(value, label))
-})
-
 # Discards specified values from variables.
 DS$set("public", "vdiscard", function(vars, ..., filter = NULL) {
-	filter_quosure = rlang::enquo(filter)
-	filter_mask = rep(T, self$nrow)
-	if (!rlang::quo_is_null(filter_quosure)) filter_mask = rlang::eval_tidy(filter_quosure, data = self$data)
+	# filter_quosure = rlang::enquo(filter)
+	# filter_mask = rep(T, self$nrow)
+	# if (!rlang::quo_is_null(filter_quosure)) filter_mask = eval_row_mask(filter_quosure, self$data)
+	filter_mask = eval_optional_row_mask(rlang::enquo(filter), self$data)
 
 	values = c(...)
 
@@ -292,6 +301,12 @@ DS$set("public", "vdiscard", function(vars, ..., filter = NULL) {
 		}
 	}
 })
+
+# Discards specified values from variables.
+DSWhere$set("public", "discard", \(vars, ...) {
+	private$ds$vdiscard({{ vars }}, ..., filter = !!private$condition)
+})
+
 
 # Discards specified values and removes their labels from variables.
 DS$set("public", "vstrip", function(vars, ...) {
@@ -362,7 +377,3 @@ DS$set("public", "make_nps0_scores", function(vars, suffix = "SCORE", label_suff
 DS$set("public", "make_nps1_scores", function(vars, suffix = "SCORE", label_suffix = "(SCORE)", move = T, suffix_position = "auto") {
 	self$make_means({{ vars }}, suffix = suffix, label_suffix = label_suffix, move = move, suffix_position = suffix_position, 1:7 ~ -100, 8:9 ~ 0, 10:11 ~ 100)
 })
-
-
-
-

@@ -4,7 +4,7 @@
 \alias{recode}
 \title{Recode function for variables based on their type.}
 \usage{
-recode(...)
+recode(xs, ...)
 }
 \description{
 Recode function for variables based on their type.

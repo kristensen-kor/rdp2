@@ -326,7 +326,7 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 
 				do.call(rbind, map(row_vars, \(row_var) {
 					if (!is.list(row_var)) {
-						valid_mask = is_valid(tdf[[row_var]])
+						valid_mask = is_present(tdf[[row_var]])
 						calc_rows_simple(tdf[[row_var]][valid_mask], tdf[[weight]][valid_mask], values_list[[row_var]])
 					} else {
 						if ("filter_var" %in% names(row_var)) {
@@ -338,7 +338,7 @@ DS$set("public", "calc_table_rblocks", function(row_vars, col_vars = NULL, weigh
 						}
 
 						blocks = do.call(rbind, map(row_var$vars, \(row_var_name) {
-							valid_mask = is_valid(tdf[[row_var_name]])
+							valid_mask = is_present(tdf[[row_var_name]])
 							calc_rows_simple(tdf[[row_var_name]][valid_mask], tdf[[weight]][valid_mask], values_list[[row_var_name]])
 						}))
 
