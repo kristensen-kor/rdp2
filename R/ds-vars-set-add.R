@@ -10,12 +10,6 @@ normalize_value = function(value) {
 	value
 }
 
-validate_label = function(label) {
-	if (is.null(label)) return(invisible())
-	if (!rlang::is_string(label) || !nzchar(label)) stop("`label` must be a non-empty character scalar.", call. = F)
-	invisible()
-}
-
 # Sets values of a variable based on provided logical conditions and optionally adds a label.
 DS$set("public", "set_if", function(vars, value, condition, label = NULL) {
 	# if (!(is.null(label) || (rlang::is_string(label) && nzchar(label)))) stop("Value label must be a non-empty character scalar", call. = F)

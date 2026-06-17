@@ -47,22 +47,6 @@ DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
 	}
 })
 
-# Merges multiple variables into a single variable by combining their values.
-DS$set("public", "merge_vars", function(...) {
-	var_names = self$names(...)
-	if (length(var_names) == 0) stop("No variables supplied to merge_vars().", call. = F)
-
-	if (is.list(self$data[[var_names[[1]]]])) {
-		self$data[[var_names[[1]]]] = var_names |> map(\(var_name) self$data[[var_name]]) |> pmap(\(...) c(...) |> mrcheck())
-	} else {
-		if (!all(map_lgl(self$data[var_names], is.numeric))) stop("All supplied variables must be single-categorical numeric vectors.", call. = F)
-		vec = self$data[var_names] |> pmap(\(...) c(...) |> mrcheck())
-		if (any(lengths(vec) > 1)) stop("Supplied variables have conflicting values.", call. = F)
-		vec[lengths(vec) == 0] = list(NA)
-		self$data[[var_names[[1]]]] = unlist(vec)
-	}
-})
-
 # Converts specified variables to multiple-response type.
 DS$set("public", "to_multiple", function(...) {
 	for (var in self$names(...)) {

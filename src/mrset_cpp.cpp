@@ -6,14 +6,17 @@ using namespace Rcpp;
 NumericVector mrcheck_cpp(NumericVector xs) {
 	const size_t n = xs.size();
 
-	if (n == 1 && !R_IsNA(xs[0])) return xs;
+	if (n == 1) {
+		if (R_FINITE(xs[0])) return xs;
+		return NumericVector(0);
+	}
 
 	NumericVector out(n);
 	size_t m = 0;
 
 	for (size_t i = 0; i < n; i++) {
 		double v = xs[i];
-		if (!R_IsNA(v)) out[m++] = v;
+		if (R_FINITE(v)) out[m++] = v;
 	}
 
 	if (m == 0) return NumericVector(0);
@@ -32,7 +35,7 @@ NumericVector mrcheck_cpp(NumericVector xs) {
 
 // [[Rcpp::export]]
 NumericVector add_to_mrset_cpp(NumericVector vec, double value) {
-	if (R_IsNA(value)) return vec;
+	if (!R_FINITE(value)) return vec;
 
 	size_t n = vec.size();
 	if (n == 0) return NumericVector::create(value);

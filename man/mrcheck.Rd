@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils.R
 \name{mrcheck}
 \alias{mrcheck}
-\title{Filters and returns unique, sorted, non-NA values from a vector.}
+\title{Returns unique, sorted, finite values from a numeric vector.}
 \usage{
 mrcheck(xs)
 }
 \description{
-Filters and returns unique, sorted, non-NA values from a vector.
+Returns unique, sorted, finite values from a numeric vector.
 }

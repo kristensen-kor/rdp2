@@ -168,13 +168,6 @@ DS$set("public", "filter", function(...) {
 	invisible(NULL)
 })
 
-# Removes metadata entries for variables no longer present in the dataset.
-DS$set("public", "vacuum", function() {
-	self$var_labels = self$var_labels[names(self$var_labels) %in% self$variables]
-	self$val_labels = self$val_labels[names(self$val_labels) %in% self$variables]
-	invisible(NULL)
-})
-
 # Retains only the specified variables in the dataset and associated metadata.
 DS$set("public", "keep", function(...) {
 	if (length(rlang::enquos(...)) == 0) stop("At least one variable selection must be supplied.", call. = F)

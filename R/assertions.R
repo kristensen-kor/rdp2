@@ -15,3 +15,9 @@ assert_nonempty_string = function(x, arg = deparse(substitute(x))) {
 
 	invisible(x)
 }
+
+validate_label = function(x, arg = deparse(substitute(x))) {
+	if (is.null(x)) return(invisible(x))
+	if (!rlang::is_string(x) || !nzchar(x)) stop(glue("`{arg}` must be a non-empty character scalar."), call. = F)
+	invisible(x)
+}

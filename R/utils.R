@@ -17,11 +17,11 @@ paste_vars = function(...) {
 	pmap_chr(grid[, rev(seq_along(args)), drop = F], \(...) paste(..., sep = "_"))
 }
 
-#' Filters and returns unique, sorted, non-NA values from a vector.
+#' Returns unique, sorted, finite values from a numeric vector.
 #' @export
 mrcheck = \(xs) mrcheck_cpp(xs)
 # reference implementation:
-# mrcheck = function(xs) xs[!is.na(xs)] |> unique() |> sort()
+# mrcheck = function(xs) xs[!is.finite(xs)] |> unique() |> sort()
 
 #' Adds a value to a multiple-response set, ensuring uniqueness and order.
 #' @export

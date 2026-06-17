@@ -23,8 +23,9 @@ Collate:
     'rdp2.R'
     'XL.R'
     'assertions.R'
-    'utils.R'
     'class-ds-where.R'
+    'ds-add-weight.R'
+    'ds-merge.R'
     'ds-vars-set-add.R'
     'rdp2 export.R'
     'rdp2 funnel.R'
@@ -45,5 +46,6 @@ Collate:
     'rdp2 vars.R'
     'rdp2 vars_to_cases.R'
     'rdp2-package.R'
+    'utils.R'
 LinkingTo: 
     Rcpp
