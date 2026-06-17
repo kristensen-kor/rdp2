@@ -6,6 +6,17 @@ DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA_characte
 # Retrieves variable labels for a set of specified variables.
 DS$set("public", "get_var_labels", \(...) self$names(...) |> map_chr(self$get_var_label))
 
+# Returns value labels of selected variables as a long-format tibble.
+DS$set("public", "get_val_labels", function(...) {
+	self$names(...) |> map(\(var_name) tibble(
+		var = var_name,
+		var_label = self$get_var_label(var_name),
+		value = unname(self$val_labels[[var_name]]),
+		label = names(self$val_labels[[var_name]])
+	)) |> bind_rows()
+})
+
+
 # Adds a suffix to the variable labels of specified variables.
 DS$set("public", "add_label_suffix", function(vars, suffix, sep = " ") {
 	var = intersect(names(self$var_labels), vars)
