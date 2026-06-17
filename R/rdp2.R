@@ -151,39 +151,42 @@ DS$set("public", "is_nominal", \(...) self$var_type(...) %in% c("single", "multi
 
 
 # Keeps rows matching the supplied conditions.
-DS$set("public", "filter", function(...) {
+DS$set("public", "filter", function(..., .quiet = F) {
 	if (length(rlang::enquos(...)) == 0) stop("At least one filtering condition must be supplied.", call. = F)
 
 	n_before = self$nrow
-
 	self$data = self$data |> filter(...)
+	n_removed = n_before - self$nrow
 
-	# if (.verbose) {
-		n_removed = n_before - self$nrow
-		message(glue("Filter: removed {n_removed} row{if (n_removed == 1) '' else 's'}; {self$nrow} remain."))
-		# plural_s = \(n) if (n == 1) "" else "s"
-		# message(glue("Filtered out {n_removed} row{plural_s(n_removed)}; {self$nrow} remain."))
-	# }
+	if (!.quiet) message(glue("Filter: removed {n_removed} row{if (n_removed == 1) '' else 's'}; {self$nrow} remain."))
 
 	invisible(NULL)
 })
 
 # Retains only the specified variables in the dataset and associated metadata.
-DS$set("public", "keep", function(...) {
+DS$set("public", "keep", function(..., .quiet = F) {
 	if (length(rlang::enquos(...)) == 0) stop("At least one variable selection must be supplied.", call. = F)
 
+	n_before = length(self$variables)
 	self$data = self$data |> select(...)
 	self$vacuum()
+	n_removed = n_before - length(self$variables)
+
+	if (!.quiet) message(glue("Keep: removed {n_removed} variable{if (n_removed == 1) '' else 's'}; {length(self$variables)} remain."))
 
 	invisible(NULL)
 })
 
 # Removes the specified variables from the dataset and associated metadata.
-DS$set("public", "remove", function(...) {
+DS$set("public", "remove", function(..., .quiet = F) {
 	if (length(rlang::enquos(...)) == 0) stop("At least one variable selection must be supplied.", call. = F)
 
+	n_before = length(self$variables)
 	self$data = self$data |> select(-c(...))
 	self$vacuum()
+	n_removed = n_before - length(self$variables)
+
+	if (!.quiet) message(glue("Remove: removed {n_removed} variable{if (n_removed == 1) '' else 's'}; {length(self$variables)} remain."))
 
 	invisible(NULL)
 })
@@ -198,7 +201,7 @@ DS$set("public", "move", function(..., after = NULL, before = NULL) {
 # DS fields contain value-semantics R objects; shallow R6 cloning is intentional.
 DS$set("public", "clone_if", function(...) {
 	tds = self$clone()
-	tds$filter(...) |> suppressMessages()
+	tds$filter(..., .quiet = T)
 	invisible(tds)
 })
 
