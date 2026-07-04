@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Internal generic method for creating new variables with specified attributes.
 DS$set("private", "nv_generic", function(name, label = NULL, labels = NULL, fill = NA_real_, after = NULL, before = NULL, var_type = "single") {
@@ -47,7 +47,7 @@ DS$set("public", "add_total", function(after = NULL, before = NULL) {
 })
 
 # Adds a respondent ID (RID) variable with sequential numbering.
-DS$set("public", "add_rid", function(name = "RID", label = "Respondent ID", after = NULL, before = NULL) {
+DS$set("public", "add_rid", function(name = "RID", label = "Respondent ID", after = NULL, before = 1) {
 	self$nvs(name, label, fill = row_number(), after = {{ after }}, before = {{ before }})
 })
 

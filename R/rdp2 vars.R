@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 #' Counts occurrences of specified values within a variable.
 #' @export

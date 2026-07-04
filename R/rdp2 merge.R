@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Merges datasets together into one dataset.
 DS$set("public", "merge_data", function(...) {

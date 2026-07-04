@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Expands native multiple-response variables into SPSS-style binary indicator groups.
 DS$set("public", "expand_multiples", function(..., sep = ": ", labels = c("-" = 0, "+" = 1)) {

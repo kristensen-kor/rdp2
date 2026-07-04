@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 DS$set("public", "open_export", function(key, ..., add = NULL, type = "multiple", filename = "open temp", sheet = NULL, alias = NULL, labels = NULL) {
 	start_time = Sys.time()

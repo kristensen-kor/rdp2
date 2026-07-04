@@ -1,6 +1,6 @@
 # ds-vars-set-add.R
 
-#' @include rdp2.R class-ds-where.R
+#' @include class-ds.R class-ds-where.R
 
 normalize_value = function(value) {
 	if (length(value) != 1L) stop("`value` must be a scalar.", call. = F)

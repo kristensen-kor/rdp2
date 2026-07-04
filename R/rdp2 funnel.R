@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # The calc_funnel method creates a funnel analysis table by sequentially evaluating specified variables that represent different stages of a process.
 # It ensures that the value labels across these variables are consistent, calculates the distribution of responses at each stage, and computes the conversion rates between consecutive stages.

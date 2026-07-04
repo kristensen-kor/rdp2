@@ -20,7 +20,7 @@ Imports:
     Rcpp
 Collate: 
     'RcppExports.R'
-    'rdp2.R'
+    'class-ds.R'
     'XL.R'
     'assertions.R'
     'class-ds-where.R'

@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Provides a summary view of variables, including their names, labels, types, and value labels, optionally filtered by name or label.
 DS$set("public", "var_view", function(name = NULL, label = NULL) {

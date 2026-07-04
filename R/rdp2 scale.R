@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Deprecated method.
 DS$set("public", "flip_scale", function(vars, ...) {

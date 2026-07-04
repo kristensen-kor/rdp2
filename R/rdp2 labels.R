@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Retrieves the variable label for a specified variable.
 DS$set("public", "get_var_label", \(var) self$var_labels[[var]] %||% NA_character_)
@@ -19,9 +19,16 @@ DS$set("public", "get_val_labels", function(...) {
 
 # Adds a suffix to the variable labels of specified variables.
 DS$set("public", "add_label_suffix", function(vars, suffix, sep = " ") {
-	var = intersect(names(self$var_labels), vars)
+	vars = intersect(names(self$var_labels), self$names({{ vars }}))
 	self$var_labels[vars] = map(self$var_labels[vars], \(label) paste(label, suffix, sep = sep))
 })
+
+# Adds a prefix to the variable labels of specified variables.
+DS$set("public", "add_label_prefix", function(vars, prefix, sep = " ") {
+	vars = intersect(names(self$var_labels), self$names({{ vars }}))
+	self$var_labels[vars] = map(self$var_labels[vars], \(label) paste(prefix, label, sep = sep))
+})
+
 
 # Sets or updates the label for a specified variable.
 DS$set("public", "set_var_label", function(var, label) {

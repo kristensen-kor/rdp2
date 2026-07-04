@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 validate_merge_vars = function(ds, ...) {
 	var_names = ds$names(...)
@@ -81,7 +81,7 @@ DS$set("public", "merge_vars", function(..., label = NULL, .remove = F) {
 
 	if (!is.null(label)) self$var_labels[[target]] = label
 
-	if (.remove) self$remove(all_of(sources))
+	if (.remove) self$remove(all_of(sources), .quiet = T)
 	# suppressMessages(self$remove(all_of(sources))) # if to change $remove()
 
 	if (label_merge$conflicts > 0) {

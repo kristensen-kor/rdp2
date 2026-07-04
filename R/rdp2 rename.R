@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Renames variables in the dataset and updates associated metadata accordingly.
 DS$set("public", "rename", function(names_from, names_to) {

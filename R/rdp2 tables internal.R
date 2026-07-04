@@ -1,5 +1,4 @@
-#' @include rdp2.R
-#'
+#' @include class-ds.R
 
 calc_raw_table_nominal = function(vec, weights, row_values) {
 	total_sum = sum(weights[is_present(vec)])

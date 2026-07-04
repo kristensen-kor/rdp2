@@ -1,4 +1,4 @@
-#' @include rdp2.R
+#' @include class-ds.R
 
 # Adds an externally calculated weight variable matched by an ID.
 DS$set("public", "add_weight", function(data, by = NULL, name = NULL, label = "Weight") {
