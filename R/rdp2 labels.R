@@ -53,9 +53,44 @@ conv_to_labels = function(labels) {
 	}
 }
 
+
+# Converts supported shorthand forms to a canonical named numeric value-label vector.
+as_val_labels = function(x) {
+	if (is.character(x)) {
+		if (length(x) == 0) stop("Labels cannot be empty.", call. = F)
+		if (anyNA(x)) stop("Labels cannot contain missing values.", call. = F)
+
+		is_code_label = grepl("^\\s*\\d+\\s+\\S", x)
+
+		if (all(is_code_label)) {
+			codes = sub("^\\s*(\\d+)\\s+.*$", "\\1", x) |> as.double()
+			labels = sub("^\\s*\\d+\\s+", "", x) |> trimws()
+			x = setNames(codes, labels)
+		} else {
+			x = setNames(as.double(seq_along(x)), x)
+		}
+	} else if (is.numeric(x) && is.null(names(x))) {
+		if (!all(is.finite(x))) stop("Label codes must be finite.", call. = F)
+		x = setNames(as.double(x), formatC(x, format = "f", big.mark = "", drop0trailing = T))
+	}
+
+	if (!is.numeric(x) || is.null(names(x))) {
+		stop("Labels must be a character vector, numeric vector, or named numeric vector.", call. = F)
+	}
+
+	if (length(x) == 0) stop("Labels cannot be empty.", call. = F)
+	if (anyNA(names(x))) stop("Label names cannot be missing.", call. = F)
+	if (!all(is.finite(x))) stop("Label codes must be finite.", call. = F)
+	if (anyDuplicated(x)) stop("Label codes must be unique.", call. = F)
+
+	sort(setNames(as.double(x), names(x)))
+}
+
+
+
 # Sets or updates the value labels for specified variables.
-DS$set("public", "set_val_labels", function(vars, ...) {
-	labels = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x) |> unlist()
+DS$set("public", "set_val_labels", function(vars, labels) {
+	labels = as_val_labels(labels)
 
 	for (var in self$names({{ vars }})) {
 		self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
@@ -65,18 +100,16 @@ DS$set("public", "set_val_labels", function(vars, ...) {
 # Sets both variable labels and value labels for a specified variable.
 DS$set("public", "set_labels", function(var, label, labels) {
 	self$set_var_label({{ var }}, label)
-	self$set_val_labels({{ var }}, labels)
+	self$set_val_labels({{ var }}, as_val_labels(labels))
 })
 
 # Adds new value labels to specified variables.
-DS$set("public", "add_val_labels", function(vars, ...) {
-	labels_list = list(...) |> map(\(x) if (is.character(x)) conv_to_labels(x) else x)
+DS$set("public", "add_val_labels", function(vars, labels) {
+	new_labels = as_val_labels(labels)
 
 	for (var in self$names({{ vars }})) {
-		for (new_labels in labels_list) {
-			labels = c(self$val_labels[[var]], new_labels)
-			self$val_labels[[var]] = sort(labels[!duplicated(labels, fromLast = T)])
-		}
+		current_labels = c(self$val_labels[[var]], new_labels)
+		self$val_labels[[var]] = sort(current_labels[!duplicated(current_labels, fromLast = T)])
 	}
 })
 

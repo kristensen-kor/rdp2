@@ -1,6 +1,12 @@
 # utils.R
 
 
+stop_glue = function(..., .envir = parent.frame()) stop(glue::glue(..., .envir = .envir), call. = F)
+warning_glue = function(..., .envir = parent.frame()) warning(glue::glue(..., .envir = .envir), call. = F)
+message_glue = function(..., .envir = parent.frame()) message(glue::glue(..., .envir = .envir))
+
+
+
 #' Formats elapsed time for display in seconds.
 #' @export
 elapsed_fmt = \(x) x |> as.numeric(units = "secs") |> round(1) |> paste0("s")
@@ -17,17 +23,6 @@ paste_vars = function(...) {
 	pmap_chr(grid[, rev(seq_along(args)), drop = F], \(...) paste(..., sep = "_"))
 }
 
-#' Returns unique, sorted, finite values from a numeric vector.
-#' @export
-mrcheck = \(xs) mrcheck_cpp(xs)
-# reference implementation:
-# mrcheck = function(xs) xs[!is.finite(xs)] |> unique() |> sort()
-
-#' Adds a value to a multiple-response set, ensuring uniqueness and order.
-#' @export
-add_to_mrset = \(vec, value) add_to_mrset_cpp(vec, value)
-# reference implementation:
-# add_to_mrset = function(var, value) c(var, value) |> mrcheck()
 
 
 

@@ -21,7 +21,7 @@ DS = R6::R6Class("DS", list(
 # read/write
 
 # Reads an SPSS (.sav) file and loads the data and metadata into the DS object.
-DS$set("public", "get_spss", function(filename) {
+DS$set("public", "get_spss", \(filename) {
 	start_time = Sys.time()
 
 	df_raw = haven::read_spss(filename)
@@ -35,7 +35,7 @@ DS$set("public", "get_spss", function(filename) {
 })
 
 # Loads data and metadata from an RDS file into the DS object.
-DS$set("public", "get_rds", function(filename) {
+DS$set("public", "get_rds", \(filename) {
 	save_data = readRDS(filename)
 
 	if (!inherits(save_data$data, "data.frame")) stop("Invalid rdp2 file: `data` must be a data frame.", call. = F)
@@ -50,7 +50,7 @@ DS$set("public", "get_rds", function(filename) {
 })
 
 # Initializes an empty dataset or loads an RDS/SPSS file; extensionless paths default to .rds.
-DS$set("public", "initialize", function(filename = NULL) {
+DS$set("public", "initialize", \(filename = NULL) {
 	if (!is.null(filename)) {
 		assert_nonempty_string(filename)
 
@@ -73,7 +73,7 @@ DS$set("public", "initialize", function(filename = NULL) {
 })
 
 # Saves the current data and metadata of the DS object to an RDS file.
-DS$set("public", "save", function(filename) {
+DS$set("public", "save", \(filename) {
 	assert_nonempty_string(filename)
 
 	if (tools::file_ext(filename) == "") filename = paste0(filename, ".rds")
@@ -127,7 +127,7 @@ DS$set("public", "base_name", \(...) self$names(base(...)))
 is_multiple = \(x) is.list(x) && !is.data.frame(x) && all(vapply(x, is.numeric, logical(1)))
 
 # Determines and returns the type of specified variables in the dataset.
-DS$set("public", "var_type", function(...) {
+DS$set("public", "var_type", \(...) {
 	self$names(...) |> map_chr(\(var_name) {
 		var = self$data[[var_name]]
 
@@ -153,7 +153,7 @@ DS$set("public", "is_nominal", \(...) self$var_type(...) %in% c("single", "multi
 
 
 # Keeps rows matching the supplied conditions.
-DS$set("public", "filter", function(..., .quiet = F) {
+DS$set("public", "filter", \(..., .quiet = F) {
 	if (length(rlang::enquos(...)) == 0) stop("At least one filtering condition must be supplied.", call. = F)
 
 	n_before = self$nrow
@@ -166,7 +166,7 @@ DS$set("public", "filter", function(..., .quiet = F) {
 })
 
 # Removes rows matching the supplied condition.
-DS$set("public", "drop_if", function(condition, .quiet = F) {
+DS$set("public", "drop_if", \(condition, .quiet = F) {
 	condition = rlang::enquo(condition)
 
 	n_before = self$nrow
@@ -179,7 +179,7 @@ DS$set("public", "drop_if", function(condition, .quiet = F) {
 })
 
 # Retains only the specified variables in the dataset and associated metadata.
-DS$set("public", "keep", function(..., .quiet = F) {
+DS$set("public", "keep", \(..., .quiet = F) {
 	if (length(rlang::enquos(...)) == 0) stop("At least one variable selection must be supplied.", call. = F)
 
 	n_before = length(self$variables)
@@ -193,7 +193,7 @@ DS$set("public", "keep", function(..., .quiet = F) {
 })
 
 # Removes the specified variables from the dataset and associated metadata.
-DS$set("public", "remove", function(..., .quiet = F) {
+DS$set("public", "remove", \(..., .quiet = F) {
 	if (length(rlang::enquos(...)) == 0) stop("At least one variable selection must be supplied.", call. = F)
 
 	n_before = length(self$variables)
@@ -207,14 +207,14 @@ DS$set("public", "remove", function(..., .quiet = F) {
 })
 
 # Changes the order of specified variables in the dataset.
-DS$set("public", "move", function(..., after = NULL, before = NULL) {
+DS$set("public", "move", \(..., after = NULL, before = NULL) {
 	self$data = self$data |> relocate(..., .after = {{ after }}, .before = {{ before }})
 	invisible(NULL)
 })
 
 # Convenience wrapper that clones the dataset and keeps matching rows.
 # DS fields contain value-semantics R objects; shallow R6 cloning is intentional.
-DS$set("public", "clone_if", function(...) {
+DS$set("public", "clone_if", \(...) {
 	tds = self$clone()
 	tds$filter(..., .quiet = T)
 	invisible(tds)
@@ -222,99 +222,6 @@ DS$set("public", "clone_if", function(...) {
 
 
 
-
-
-# Converts SPSS-style binary indicator groups into native multiple-response variables.
-DS$set("public", "conv_multiples", function(sep = ": ", labels = c("-" = 0, "+" = 1)) {
-	start_time = Sys.time()
-
-	assert_nonempty_string(sep)
-	if (!is.numeric(labels) || is.null(names(labels)) || length(labels) == 0 || anyNA(labels) || any(names(labels) == "")) {
-		stop("`labels` must be a named numeric vector without missing values.", call. = F)
-	}
-
-	mdset_data = tibble(var_name = self$variables) |>
-		filter(grepl("_[0-9]+$", var_name)) |>
-		filter(map_lgl(var_name, \(x) identical(self$val_labels[[x]], labels))) |>
-		mutate(label = self$get_var_labels(all_of(var_name))) |>
-		filter(!is.na(label)) |>
-		mutate(tokens = strsplit(label, sep, fixed = T)) |>
-		mutate(base_name = sub("_[0-9]+$", "", var_name)) |>
-		group_by(base_name) |>
-		filter(all(lengths(tokens) > 1)) |>
-		ungroup() |>
-		mutate(prefix = map_chr(tokens, \(x) x[1])) |>
-		mutate(label = map_chr(tokens, \(x) paste(x[-1], collapse = sep))) |>
-		select(-tokens) |>
-		mutate(id = sub(".*_([0-9]+)$", "\\1", var_name) |> as.numeric()) |>
-		group_by(base_name) |>
-		filter(n_distinct(prefix) == 1, anyDuplicated(id) == 0) |>
-		ungroup() |>
-		arrange(base_name, id)
-
-	mdsets = mdset_data$base_name |> unique()
-
-	if (length(mdsets) == 0) {
-		message("No multiple-response sets found: ", elapsed_fmt(Sys.time() - start_time))
-		return(invisible(NULL))
-	}
-
-	existing_targets = intersect(mdsets, self$variables)
-	if (length(existing_targets) > 0) {
-		stop("Cannot convert multiple-response sets because target variables already exist: ", paste(existing_targets, collapse = ", "), ".", call. = F)
-	}
-
-	n_indicators = nrow(mdset_data)
-
-	for (mdset in mdsets) {
-		current_slice = mdset_data[mdset_data$base_name == mdset, ]
-
-		col_data = do.call(rbind, seq_len(nrow(current_slice)) |> lapply(\(i) {
-			if_else(has(self$data[[current_slice$var_name[i]]], 1), current_slice$id[i], NA_real_)
-		})) |> as.data.frame() |> as.list() |> lapply(\(x) x[!is.na(x)]) |> unname()
-
-		self$data[[mdset]] = col_data
-		self$data = self$data |> relocate(all_of(mdset), .before = all_of(current_slice$var_name[1]))
-		self$data[current_slice$var_name] = NULL
-
-		self$var_labels[[mdset]] = current_slice$prefix[1]
-		self$val_labels[[mdset]] = setNames(current_slice$id, current_slice$label)
-	}
-
-	# to test new alternative optimized approach.
-	# mdset_slices = split(mdset_data, mdset_data$base_name)
-	#
-	# new_columns = setNames(vector("list", length(mdsets)), mdsets)
-	# anchors = setNames(character(length(mdsets)), mdsets)
-	#
-	# for (mdset in mdsets) {
-	# 	current_slice = mdset_slices[[mdset]]
-	#
-	# 	new_columns[[mdset]] = do.call(rbind, seq_len(nrow(current_slice)) |> lapply(\(i) {
-	# 		if_else(has(self$data[[current_slice$var_name[i]]], 1), current_slice$id[i], NA_real_)
-	# 	})) |> as.data.frame() |> as.list() |> lapply(\(x) x[!is.na(x)]) |> unname()
-	#
-	# 	anchors[[mdset]] = current_slice$var_name[1]
-	#
-	# 	self$var_labels[[mdset]] = current_slice$prefix[1]
-	# 	self$val_labels[[mdset]] = setNames(current_slice$id, current_slice$label)
-	# }
-	#
-	# multiple_data = as_tibble(new_columns)
-	#
-	# final_names = names(self$data)
-	# final_names[match(unname(anchors), final_names)] = names(anchors)
-	# final_names = final_names[!final_names %in% mdset_data$var_name]
-	#
-	# self$data = bind_cols(self$data, multiple_data) |> select(all_of(final_names))
-
-
-	self$vacuum()
-
-	message(glue("Converted {length(mdsets)} multiple-response set{if (length(mdsets) == 1) '' else 's'} from {n_indicators} indicator variable{if (n_indicators == 1) '' else 's'}: {elapsed_fmt(Sys.time() - start_time)}"))
-
-	invisible(NULL)
-})
 
 
 
@@ -339,7 +246,7 @@ DS$set("public", "where_not_has", function(var, ...) {
 # where_between()
 # where_missing()
 
-# Convenience wrapper that returns cimber of rows satisfying the condition.
+# Convenience wrapper that returns number of rows satisfying the condition.
 DS$set("public", "count_if", \(condition) self$where({{ condition }})$nrow)
 
 # ds$left_join(weights, by = "RID")

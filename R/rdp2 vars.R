@@ -12,47 +12,93 @@ bitcount = function(var, ...) {
 	}
 }
 
-# Automatically codes single-response variables based on provided labels.
-DS$set("public", "autocode_single", function(..., labels = NULL, nomatch = NA) {
-	vars = self$names(...)
 
-	for (var_name in vars) {
-		vec = self$data[[var_name]]
-		values = NULL
 
-		if (is.numeric(vec)) {
-			values = vec |> unique() |> sort()
-			vec = formatC(vec, format = "f", big.mark = "", drop0trailing = T)
-			values = formatC(values, format = "f", big.mark = "", drop0trailing = T)
+# Automatically converts character variables to numeric single-response variables.
+DS$set("public", "autocode_single", function(vars, labels = NULL, unmatched = NULL) {
+	vars = self$names({{ vars }})
+	is_text = map_lgl(vars, \(var) is.character(self$data[[var]]))
+	is_numeric = map_lgl(vars, \(var) is.numeric(self$data[[var]]))
+
+	if (any(is_numeric)) message("Autocode: skipped numeric variables: ", toString(vars[is_numeric]), ".")
+	if (any(!is_text & !is_numeric)) message("Autocode: skipped variables of unsupported types: ", toString(vars[!is_text & !is_numeric]), ".")
+
+	vars = vars[is_text]
+	if (length(vars) == 0) return(invisible(NULL))
+
+	if (is.null(labels)) {
+		values = unlist(self$data[vars], use.names = F)
+		values = values[!is.na(values) & nzchar(values)]
+
+		if (length(values) == 0) {
+			labels = setNames(numeric(), character())
 		} else {
-			if (is.null(labels)) {
-				values = vec[vec != ""] |> unique() |> sort()
-			} else {
-				# if (is.character(labels)) labels = conv_to_labels(labels)
-				# values = names(labels)
-
-				values = labels
-			}
-
-			not_found_counts = vec[!(vec %in% values)] |> as_tibble() |> count(value, sort = T)
-
-			if (nrow(not_found_counts) > 0) {
-				cat(var_name, "values not from the list:\n")
-				print(not_found_counts)
-			}
+			counts = table(values)
+			label_names = names(counts)[order(-unname(counts), names(counts))]
+			labels = setNames(as.double(seq_along(label_names)), label_names)
 		}
-
-		self$data[[var_name]] = match(vec, values, nomatch = nomatch) |> as.double()
-		self$set_val_labels(all_of(var_name), setNames(seq_along(values), values))
+	} else {
+		labels = as_val_labels(labels)
 	}
+
+	if (any(names(labels) == "")) stop("Autocode labels cannot be empty because empty strings are treated as missing values.", call. = F)
+	if (anyDuplicated(names(labels))) stop("Autocode labels must contain unique source values.", call. = F)
+
+	if (!is.null(unmatched)) {
+		unmatched = as_val_labels(unmatched)
+
+		if (length(unmatched) != 1) stop("`unmatched` must define exactly one value.", call. = F)
+		if (names(unmatched) == "") stop("`unmatched` label cannot be empty.", call. = F)
+		if (unname(unmatched) %in% unname(labels)) stop("`unmatched` code conflicts with a code in `labels`.", call. = F)
+		if (names(unmatched) %in% names(labels)) warning("`unmatched` label conflicts with a label in `labels`.", call. = F)
+	}
+
+	plans = vars |> set_names() |> map(\(var) {
+		x = self$data[[var]]
+		missing = is.na(x) | x == ""
+		matched = match(x, names(labels))
+		unknown = !missing & is.na(matched)
+		result = unname(labels[matched])
+
+		if (!is.null(unmatched)) result[unknown] = unname(unmatched)
+		result[missing] = NA_real_
+
+		list(
+			data = as.double(result),
+			unknown_counts = sort(table(x[unknown]), decreasing = T),
+			n_unmatched = sum(unknown)
+		)
+	})
+
+	new_labels = c(labels, unmatched)
+	if (length(new_labels) == 0) new_labels = setNames(numeric(), character())
+
+	for (var in vars) {
+		self$data[[var]] = plans[[var]]$data
+		self$val_labels[[var]] = sort(new_labels)
+	}
+
+	if (is.null(unmatched)) {
+		for (var in vars) {
+			x = plans[[var]]
+			if (x$n_unmatched == 0) next
+
+			shown = head(x$unknown_counts, 10)
+			details = paste0("\"", names(shown), "\" (", unname(shown), ")", collapse = ", ")
+			remaining = length(x$unknown_counts) - length(shown)
+
+			message(
+				glue("Autocode `{var}`: {x$n_unmatched} unmatched value{if (x$n_unmatched == 1) '' else 's'} converted to NA.\n"),
+				"  Values: ", details, if (remaining > 0) glue(", and {remaining} more") else "", "."
+			)
+		}
+	}
+
+	invisible(NULL)
 })
 
-# Converts specified variables to multiple-response type.
-DS$set("public", "to_multiple", function(...) {
-	for (var in self$names(...)) {
-		if (!is_multiple(self$data[[var]])) self$data[[var]] = map(self$data[[var]], mrcheck)
-	}
-})
+
+
 
 # Converts specified variables to single-response type.
 DS$set("public", "to_single", function(...) {

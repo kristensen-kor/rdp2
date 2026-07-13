@@ -26,6 +26,7 @@ Collate:
     'class-ds-where.R'
     'ds-add-weight.R'
     'ds-merge.R'
+    'ds-mutiples.R'
     'ds-vars-set-add.R'
     'rdp2 export.R'
     'rdp2 funnel.R'
