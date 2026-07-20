@@ -28,6 +28,7 @@ Collate:
     'ds-merge.R'
     'ds-mutiples.R'
     'ds-vars-set-add.R'
+    'ds-vars-to-cases.R'
     'rdp2 export.R'
     'rdp2 funnel.R'
     'rdp2 has.R'
@@ -45,7 +46,6 @@ Collate:
     'rdp2 validate.R'
     'rdp2 var_view.R'
     'rdp2 vars.R'
-    'rdp2 vars_to_cases.R'
     'rdp2-package.R'
     'utils.R'
 LinkingTo: 
