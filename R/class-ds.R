@@ -17,6 +17,10 @@ DS = R6::R6Class("DS", list(
 ))
 
 
+# Convenience wrapper around DS$new(...)
+new_ds = function(...) DS$new(...)
+
+
 
 # read/write
 
@@ -58,7 +62,7 @@ DS$set("public", "initialize", \(filename = NULL) {
 
 		if (!file.exists(filename)) stop("File does not exist: ", filename, call. = F)
 
-		file_extension = tools::file_ext(filename) |> tolower()
+		file_extension = tolower(tools::file_ext(filename))
 
 		if (file_extension == "sav") {
 			self$get_spss(filename)

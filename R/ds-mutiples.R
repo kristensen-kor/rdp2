@@ -118,7 +118,10 @@ DS$set("public", "conv_multiples", \(sep = ": ", labels = c("-" = 0, "+" = 1)) {
 		return(invisible(NULL))
 	}
 
-	existing_targets = intersect(names(mdsets), self$variables)
+	target_names = names(mdsets)
+	source_vars = indicator_data$var_name
+
+	existing_targets = intersect(target_names, setdiff(self$variables, source_vars))
 	if (length(existing_targets) > 0) {
 		stop_glue("Cannot convert multiple-response sets because target variables already exist: {toString(existing_targets)}.")
 	}
@@ -139,8 +142,6 @@ DS$set("public", "conv_multiples", \(sep = ": ", labels = c("-" = 0, "+" = 1)) {
 
 	n_indicators = nrow(indicator_data)
 
-	target_names = names(mdsets)
-	source_vars = indicator_data$var_name
 	anchors = map_chr(mdsets, \(x) x$var_name[1])
 	new_columns = setNames(vector("list", length(mdsets)), target_names)
 
@@ -153,9 +154,11 @@ DS$set("public", "conv_multiples", \(sep = ": ", labels = c("-" = 0, "+" = 1)) {
 	}
 
 	final_names = self$variables
+	keep_vars = !final_names %in% setdiff(source_vars, anchors)
 	final_names[match(anchors, final_names)] = target_names
-	final_names = final_names[!final_names %in% source_vars]
-	self$data = bind_cols(self$data, as_tibble(new_columns)) |> select(all_of(final_names))
+	final_names = final_names[keep_vars]
+
+	self$data = self$data |> select(-all_of(source_vars)) |> bind_cols(as_tibble(new_columns)) |> select(all_of(final_names))
 	self$var_labels[target_names] = map(mdsets, \(x) x$prefix[1])
 	self$val_labels[target_names] = map(mdsets, \(x) setNames(as.double(x$id), x$label))
 

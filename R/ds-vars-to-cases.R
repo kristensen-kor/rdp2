@@ -75,9 +75,9 @@ DS$set("public", "clone_to_cases", \(index, ..., index_label = NULL, index_label
 	tds$data = seq_len(n_cases) |> map(\(i) {
 		group_df = tds$data |> select(all_of(map_chr(cols_list, \(cols) cols[[i]]))) |> set_names(output_names)
 		selected_rows = !cols_empty(group_df)
-		result = bind_cols(base_df[selected_rows, , drop = F], group_df[selected_rows, , drop = F])
+		result = base_df[selected_rows, , drop = F]
 		result[[index]] = index_values[[i]]
-		result
+		bind_cols(result, group_df[selected_rows, , drop = F])
 	}) |> list_rbind()
 
 	tds$vacuum()
