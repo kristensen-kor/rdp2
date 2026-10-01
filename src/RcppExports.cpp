@@ -58,11 +58,16 @@ BEGIN_RCPP
 END_RCPP
 }
 
+RcppExport SEXP sav_read_c(SEXP, SEXP, SEXP, SEXP);
+RcppExport SEXP sav_write_c(SEXP, SEXP, SEXP);
+
 static const R_CallMethodDef CallEntries[] = {
     {"_rdp2_add_to_mc_col_cpp", (DL_FUNC) &_rdp2_add_to_mc_col_cpp, 2},
     {"_rdp2_has_mc_cpp", (DL_FUNC) &_rdp2_has_mc_cpp, 2},
     {"_rdp2_mrcheck_cpp", (DL_FUNC) &_rdp2_mrcheck_cpp, 1},
     {"_rdp2_add_to_mrset_cpp", (DL_FUNC) &_rdp2_add_to_mrset_cpp, 2},
+    {"sav_read_c",  (DL_FUNC) &sav_read_c,  4},
+    {"sav_write_c", (DL_FUNC) &sav_write_c, 3},
     {NULL, NULL, 0}
 };
 

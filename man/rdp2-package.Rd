@@ -11,5 +11,10 @@ A library for common data processing tasks and table outputs. Recoding variables
 \author{
 \strong{Maintainer}: Kristensen Kor \email{kristensen.kor@gmail.com}
 
+Authors:
+\itemize{
+  \item Kristensen Kor \email{kristensen.kor@gmail.com}
+}
+
 }
 \keyword{internal}

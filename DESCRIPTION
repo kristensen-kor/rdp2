@@ -10,7 +10,6 @@ License: GPL (>= 3)
 Encoding: UTF-8
 normalize: TRUE
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports: 
     dplyr,
     glue,
@@ -47,6 +46,8 @@ Collate:
     'rdp2 var_view.R'
     'rdp2 vars.R'
     'rdp2-package.R'
+    'sav-io.R'
     'utils.R'
 LinkingTo: 
     Rcpp
+Config/roxygen2/version: 8.1.0

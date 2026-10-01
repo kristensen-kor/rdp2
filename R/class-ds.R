@@ -25,14 +25,23 @@ new_ds = function(...) DS$new(...)
 # read/write
 
 # Reads an SPSS (.sav) file and loads the data and metadata into the DS object.
-DS$set("public", "get_spss", \(filename) {
+DS$set("public", "get_spss", \(filename, encoding = NULL, haven = F) {
 	start_time = Sys.time()
 
-	df_raw = haven::read_spss(filename)
+	if (!haven) {
+		sav = read_sav(filename, encoding = encoding)
 
-	self$data = df_raw |> modify(\(x) `attributes<-`(x, NULL))
-	self$var_labels = df_raw |> map(\(x) attr(x, "label", exact = T)) |> compact()
-	self$val_labels = df_raw |> map(\(x) attr(x, "labels", exact = T)) |> compact()
+		self$data = as_tibble(sav$data, .name_repair = "minimal")
+		self$var_labels = sav$var_labels
+		self$val_labels = sav$val_labels
+	} else {
+		df_raw = haven::read_spss(filename)
+
+		self$data = df_raw |> modify(\(x) `attributes<-`(x, NULL))
+		attr(self$data, "label") = NULL
+		self$var_labels = df_raw |> map(\(x) attr(x, "label", exact = T)) |> compact()
+		self$val_labels = df_raw |> map(\(x) attr(x, "labels", exact = T)) |> compact()
+	}
 
 	message(glue("Read SPSS: {elapsed_fmt(Sys.time() - start_time)} ({self$nrow} rows, {length(self$variables)} variables)"))
 	invisible(NULL)
@@ -54,7 +63,7 @@ DS$set("public", "get_rds", \(filename) {
 })
 
 # Initializes an empty dataset or loads an RDS/SPSS file; extensionless paths default to .rds.
-DS$set("public", "initialize", \(filename = NULL) {
+DS$set("public", "initialize", \(filename = NULL, encoding = NULL, haven = F) {
 	if (!is.null(filename)) {
 		assert_nonempty_string(filename)
 
@@ -65,7 +74,7 @@ DS$set("public", "initialize", \(filename = NULL) {
 		file_extension = tolower(tools::file_ext(filename))
 
 		if (file_extension == "sav") {
-			self$get_spss(filename)
+			self$get_spss(filename, encoding, haven)
 		} else if (file_extension == "rds") {
 			self$get_rds(filename)
 		} else {

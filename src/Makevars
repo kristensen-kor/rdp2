@@ -1,1 +1,2 @@
 PKG_CXXFLAGS = -march=x86-64-v3 -mtune=generic -O3 -flto
+PKG_LIBS = -lz
