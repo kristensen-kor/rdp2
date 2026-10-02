@@ -3,7 +3,7 @@
 # Merges datasets together into one dataset.
 DS$set("public", "merge_data", function(...) {
 	start_time = Sys.time()
-	on.exit(cat("Merge time:", elapsed_fmt(Sys.time() - start_time), "seconds\n"))
+	# on.exit(cat("Merge time:", elapsed_fmt(Sys.time() - start_time), "seconds\n"))
 
 	dss = list(...)
 
@@ -84,7 +84,8 @@ DS$set("public", "merge_data", function(...) {
 
 	self$data = self$data |> mutate(across(where(is.list), \(var) map(var, \(x) if (is.null(x)) numeric(0) else x)))
 
-	cat("\nFinal merged dataset:\n")
-	cat(sprintf("Total variables: %d\n", length(self$variables)))
-	cat(sprintf("Total rows: %d\n\n", self$nrow))
+	# cat("\nFinal merged dataset:\n")
+	# cat(sprintf("Total variables: %d\n", length(self$variables)))
+	# cat(sprintf("Total rows: %d\n\n", self$nrow))
+	message(glue("Merged datasets: {elapsed_fmt(Sys.time() - start_time)} ({self$nrow} rows, {length(self$variables)} variables)"))
 })

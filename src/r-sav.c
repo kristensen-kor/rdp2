@@ -1,4 +1,4 @@
-/* Standalone SAV reader 0.5.5: path-based R entry point. */
+/* Standalone SAV reader 0.5.6: path-based R entry point. */
 #define _FILE_OFFSET_BITS 64
 #define _POSIX_C_SOURCE 200809L
 /* Keep R's short-name macros from rewriting native fields such as error. */

@@ -5,5 +5,9 @@ read_sav = function(path, encoding = NULL, user_na = F, debug = F) {
 }
 
 write_sav = function(x, path, encoding = "UTF-8") {
-	invisible(.Call("sav_write_c", x, path, encoding, PACKAGE = "rdp2"))
+	if ((!is.list(x) && !is.environment(x)) || !all(c("data", "var_labels", "val_labels") %in% names(x))) {
+		stop("Expected an object with data, var_labels and val_labels fields.", call. = F)
+	}
+
+	invisible(.Call("sav_write_c", list(data = x$data, var_labels = x$var_labels, val_labels = x$val_labels), path, encoding, PACKAGE = "rdp2"))
 }

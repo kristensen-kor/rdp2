@@ -341,7 +341,7 @@ static void extension(WriteContext *w, uint32_t subtype, uint32_t size, size_t c
 }
 static void dictionary(WriteContext *w) {
 	unsigned char header[176]; memset(header, ' ', sizeof header); memcpy(header, "$FL2", 4);
-	const char *product = "@(#) SPSS DATA FILE - rdp2 SAV writer 0.5.5";
+	const char *product = "@(#) SPSS DATA FILE - rdp2 SAV writer 0.5.6";
 	memcpy(header+4, product, strlen(product));
 	pack32(header+64, 2); pack32(header+68, (uint32_t)w->slots); pack32(header+72, 1);
 	pack32(header+76, 0); pack32(header+80, w->rows <= INT32_MAX ? (uint32_t)w->rows : UINT32_MAX);
@@ -388,11 +388,13 @@ static void dictionary(WriteContext *w) {
 	uint32_t machine[] = {20,0,0,UINT32_MAX,1,1,2,w->cp1251 ? 1251u : 65001u};
 	for (size_t i = 0; i < 8; i++) integer(w, machine[i]);
 	extension(w, 4, 8, 3); number(w, -DBL_MAX); number(w, DBL_MAX); number(w, nextafter(-DBL_MAX, 0));
+	/* Data View column width is a uniform exchange default, unrelated to
+	 * string storage width or numeric print/write format. */
 	extension(w, 11, 4, w->physical_count*3);
 	for (size_t i = 0; i < w->column_count; i++) {
 		WriteColumn *c = &w->columns[i];
 		for (size_t j = 0; j < c->segments; j++) {
-			integer(w, c->width || c->label_count ? 1 : 3); integer(w, c->width ? 30 : 12); integer(w, c->width ? 0 : 1);
+			integer(w, c->width || c->label_count ? 1 : 3); integer(w, 8); integer(w, c->width ? 0 : 1);
 		}
 	}
 	size_t length = w->column_count-1;

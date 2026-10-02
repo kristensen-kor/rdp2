@@ -11,6 +11,7 @@ Encoding: UTF-8
 normalize: TRUE
 Roxygen: list(markdown = TRUE)
 Imports: 
+    checkmate,
     dplyr,
     glue,
     haven,
@@ -26,6 +27,7 @@ Collate:
     'ds-add-weight.R'
     'ds-merge.R'
     'ds-mutiples.R'
+    'ds-validate.R'
     'ds-vars-set-add.R'
     'ds-vars-to-cases.R'
     'rdp2 export.R'
@@ -42,7 +44,6 @@ Collate:
     'rdp2 tables internal.R'
     'rdp2 tables.R'
     'rdp2 transpose.R'
-    'rdp2 validate.R'
     'rdp2 var_view.R'
     'rdp2 vars.R'
     'rdp2-package.R'
