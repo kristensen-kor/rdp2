@@ -99,6 +99,7 @@ DS$set("public", "vacuum", \() {
 DS$set("private", "check_state", \(repair = F) {
 	# helpers
 	show_names = \(x, n = 5) paste0(paste(head(x, n), collapse = ", "), if (length(x) > n) ", ..." else "")
+	n_vars = \(x, type = NULL) paste0(length(x), " ", if (!is.null(type)) paste0(type, " ") else "", "variable", if (length(x) != 1) "s" else "")
 
 	# Core containers
 	if (!is.data.frame(self$data)) stop("`$data` must be a data frame or tibble.", call. = F)
@@ -141,7 +142,7 @@ DS$set("private", "check_state", \(repair = F) {
 		bad = names(self$data)[!supported]
 
 		stop(glue(
-			"Dataset contains {length(bad)} unsupported variable{if (length(bad) != 1) 's'}: {show_names(bad)}. ",
+			"Dataset contains unsupported {n_vars(bad)}: {show_names(bad)}. ",
 			"Variables must be logical, integer, double, character, or list vectors; classed and dimensional objects are unsupported."
 		), call. = F)
 	}
@@ -151,7 +152,7 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(!supported)) {
 		bad = names(self$var_labels)[!supported]
-		stop(glue("Dataset contains {length(bad)} unsupported variable label{if (length(bad) != 1) 's'}: {show_names(bad)}. Variable labels must be non-missing character scalars."), call. = F)
+		stop(glue("Dataset contains unsupported variable labels for {n_vars(bad)}: {show_names(bad)}. Variable labels must be non-missing character scalars."), call. = F)
 	}
 
 
@@ -162,9 +163,9 @@ DS$set("private", "check_state", \(repair = F) {
 	bad = intersect(names(self$val_labels), self$names(where(is.character)))
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Value labels are defined for {length(bad)} text variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to remove them."), call. = F)
+		if (!repair) stop(glue("Value labels are defined for {n_vars(bad, 'text')}: {show_names(bad)}; run `$repair()` to remove them."), call. = F)
 		self$val_labels[bad] = NULL
-		message(glue("Repair: removed value labels for {length(bad)} text variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: removed value labels for {n_vars(bad, 'text')}: {show_names(bad)}."))
 	}
 
 
@@ -175,7 +176,7 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(!supported)) {
 		bad = label_vars[!supported]
-		stop(glue("Value labels have unsupported representations for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Value labels must be numeric vectors; classed and dimensional objects are unsupported."), call. = F)
+		stop(glue("Value labels have unsupported representations for {n_vars(bad)}: {show_names(bad)}. Value labels must be numeric vectors; classed and dimensional objects are unsupported."), call. = F)
 	}
 
 	# Canonical double storage
@@ -183,9 +184,9 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(convert)) {
 		bad = label_vars[convert]
-		if (!repair) stop(glue("Value-label codes must be doubles for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to convert them."), call. = F)
+		if (!repair) stop(glue("Value-label codes must be doubles for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to convert them."), call. = F)
 		self$val_labels[convert] = self$val_labels[convert] |> map(\(x) set_names(as.double(x), names(x)))
-		message(glue("Repair: converted value-label codes to double for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: converted value-label codes to double for {n_vars(bad)}: {show_names(bad)}."))
 	}
 
 	# Label text
@@ -193,7 +194,7 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(!valid_text)) {
 		bad = label_vars[!valid_text]
-		stop(glue("Value labels have missing label text for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Non-empty value-label vectors require non-missing character names."), call. = F)
+		stop(glue("Value labels have missing label text for {n_vars(bad)}: {show_names(bad)}. Non-empty value-label vectors require non-missing character names."), call. = F)
 	}
 
 	# Categorical codes
@@ -201,7 +202,7 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(!valid_codes)) {
 		bad = label_vars[!valid_codes]
-		stop(glue("Value labels contain invalid categorical codes for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Codes must be finite integers within ±(2^53 - 1)."), call. = F)
+		stop(glue("Value labels contain invalid categorical codes for {n_vars(bad)}: {show_names(bad)}. Codes must be finite integers within ±(2^53 - 1)."), call. = F)
 	}
 
 	# Duplicate codes
@@ -209,7 +210,7 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(duplicates)) {
 		bad = label_vars[duplicates]
-		stop(glue("Value labels contain duplicate codes for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Codes must be unique."), call. = F)
+		stop(glue("Value labels contain duplicate codes for {n_vars(bad)}: {show_names(bad)}. Codes must be unique."), call. = F)
 	}
 
 	# Ordering
@@ -217,9 +218,9 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(unsorted)) {
 		bad = label_vars[unsorted]
-		if (!repair) stop(glue("Value-label codes are not sorted for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to sort them."), call. = F)
+		if (!repair) stop(glue("Value-label codes are not sorted for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to sort them."), call. = F)
 		self$val_labels[unsorted] = map(self$val_labels[unsorted], \(x) x[order(x)])
-		message(glue("Repair: sorted value labels by code for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: sorted value labels by code for {n_vars(bad)}: {show_names(bad)}."))
 	}
 
 
@@ -229,36 +230,36 @@ DS$set("private", "check_state", \(repair = F) {
 	bad = setdiff(self$names(where(is.logical)), names(self$val_labels))
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Numeric variables use logical storage for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to convert FALSE/TRUE to 0/1."), call. = F)
+		if (!repair) stop(glue("Logical storage is used for {n_vars(bad, 'numeric')}: {show_names(bad)}; run `$repair()` to convert FALSE/TRUE to 0/1."), call. = F)
 		self$data[bad] = self$data[bad] |> map(as.double)
-		warning(glue("Repair: converted FALSE/TRUE to 0/1 for {length(bad)} numeric variable{if (length(bad) != 1) 's'}: {show_names(bad)}. This conversion is unusual; verify that logical values were intended as numeric 0/1."))
+		warning(glue("Repair: converted FALSE/TRUE to 0/1 for {n_vars(bad, 'numeric')}: {show_names(bad)}. Verify that logical values were intended as numeric 0/1."), call. = F)
 	}
 
 	# Integer numeric
 	bad = setdiff(self$names(where(is.integer)), names(self$val_labels))
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Numeric variables use integer storage for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to convert them to doubles."), call. = F)
+		if (!repair) stop(glue("Integer storage is used for {n_vars(bad, 'numeric')}: {show_names(bad)}; run `$repair()` to convert them to doubles."), call. = F)
 		self$data[bad] = self$data[bad] |> map(as.double)
-		message(glue("Repair: converted integer storage to double for {length(bad)} numeric variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: converted integer storage to double for {n_vars(bad, 'numeric')}: {show_names(bad)}."))
 	}
 
 	# Logical single categorical
 	bad = intersect(self$names(where(is.logical)), names(self$val_labels))
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Single categorical variables use logical storage for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to convert FALSE/TRUE to codes 0/1."), call. = F)
+		if (!repair) stop(glue("Logical storage is used for {n_vars(bad, 'single categorical')}: {show_names(bad)}; run `$repair()` to convert FALSE/TRUE to codes 0/1."), call. = F)
 		self$data[bad] = self$data[bad] |> map(as.double)
-		warning(glue("Repair: converted FALSE/TRUE to categorical codes 0/1 for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Verify that 0/1 are the intended category codes."), call. = F)
+		warning(glue("Repair: converted FALSE/TRUE to categorical codes 0/1 for {n_vars(bad, 'single categorical')}: {show_names(bad)}. Verify that 0/1 are the intended category codes."), call. = F)
 	}
 
 	# Integer single categorical
 	bad = intersect(self$names(where(is.integer)), names(self$val_labels))
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Single categorical variables use integer storage for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to convert them to doubles."), call. = F)
+		if (!repair) stop(glue("Integer storage is used for {n_vars(bad, 'single categorical')}: {show_names(bad)}; run `$repair()` to convert them to doubles."), call. = F)
 		self$data[bad] = self$data[bad] |> map(as.double)
-		message(glue("Repair: converted integer storage to double for {length(bad)} single categorical variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: converted integer storage to double for {n_vars(bad, 'single categorical')}: {show_names(bad)}."))
 	}
 
 
@@ -268,13 +269,13 @@ DS$set("private", "check_state", \(repair = F) {
 	bad = numeric_vars[vapply(self$data[numeric_vars], \(x) any(is.nan(x) | is.infinite(x)), logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Numeric variables contain NaN or infinity for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to replace them with NA."), call. = F)
+		if (!repair) stop(glue("NaN or infinity occurs in {n_vars(bad, 'numeric')}: {show_names(bad)}; run `$repair()` to replace them with NA."), call. = F)
 
 		for (var_name in bad) {
 			self$data[[var_name]][is.nan(self$data[[var_name]]) | is.infinite(self$data[[var_name]])] = NA_real_
 		}
 
-		message(glue("Repair: replaced NaN/infinite values with NA for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: replaced NaN/infinite values with NA for {n_vars(bad, 'numeric')}: {show_names(bad)}."))
 	}
 
 
@@ -283,13 +284,13 @@ DS$set("private", "check_state", \(repair = F) {
 	bad = single_vars[vapply(self$data[single_vars], \(x) any(is.nan(x) | is.infinite(x)), logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Single categorical variables contain NaN or infinity for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to replace them with NA."), call. = F)
+		if (!repair) stop(glue("Single categorical variables contain NaN or infinity for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to replace them with NA."), call. = F)
 
 		for (var_name in bad) {
 			self$data[[var_name]][is.nan(self$data[[var_name]]) | is.infinite(self$data[[var_name]])] = NA_real_
 		}
 
-		message(glue("Repair: replaced NaN/infinite values with NA for {length(bad)} single categorical variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: replaced NaN/infinite values with NA for {n_vars(bad, 'single categorical')}: {show_names(bad)}."))
 	}
 
 	# Single categorical code domain
@@ -298,8 +299,8 @@ DS$set("private", "check_state", \(repair = F) {
 		any(abs(x) > 2^53 - 1 | x != trunc(x))
 	}, logical(1))]
 
-	if (length(bad)) {
-		stop(glue("Single categorical variables contain invalid codes for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Codes must be integer-valued doubles within ±(2^53 - 1), or NA."), call. = F)
+	if (length(bad) > 0) {
+		stop(glue("Single categorical variables contain invalid codes for {n_vars(bad)}: {show_names(bad)}. Codes must be integer-valued doubles within ±(2^53 - 1), or NA."), call. = F)
 	}
 
 
@@ -313,7 +314,7 @@ DS$set("private", "check_state", \(repair = F) {
 
 	if (any(invalid)) {
 		bad = mr_vars[invalid]
-		stop(glue("Multiple-response variables contain unsupported elements for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. MR elements must ultimately be unclassed, non-dimensional double vectors."), call. = F)
+		stop(glue("Multiple-response variables contain unsupported elements for {n_vars(bad)}: {show_names(bad)}. MR elements must ultimately be unclassed, non-dimensional double vectors."), call. = F)
 	}
 
 
@@ -321,7 +322,7 @@ DS$set("private", "check_state", \(repair = F) {
 	bad = mr_vars[vapply(self$data[mr_vars], \(var) any(vapply(var, is.null, logical(1))), logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Multiple-response variables contain NULL elements for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to replace them with empty responses."), call. = F)
+		if (!repair) stop(glue("Multiple-response variables contain NULL elements for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to replace them with empty responses."), call. = F)
 
 		for (var_name in bad) {
 			var = self$data[[var_name]]
@@ -330,14 +331,14 @@ DS$set("private", "check_state", \(repair = F) {
 			self$data[[var_name]] = var
 		}
 
-		message(glue("Repair: replaced NULL elements with empty responses for {length(bad)} multiple-response variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: replaced NULL elements with empty responses for {n_vars(bad, 'multiple-response')}: {show_names(bad)}."))
 	}
 
 	# Logical MR elements
 	bad = mr_vars[vapply(self$data[mr_vars], \(var) any(vapply(var, is.logical, logical(1))), logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Multiple-response variables contain logical elements for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to convert FALSE/TRUE to 0/1."), call. = F)
+		if (!repair) stop(glue("Multiple-response variables contain logical elements for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to convert FALSE/TRUE to 0/1."), call. = F)
 
 		for (var_name in bad) {
 			var = self$data[[var_name]]
@@ -346,7 +347,7 @@ DS$set("private", "check_state", \(repair = F) {
 			self$data[[var_name]] = var
 		}
 
-		warning(glue("Repair: converted FALSE/TRUE to categorical codes 0/1 for {length(bad)} multiple-response variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Verify that 0/1 are the intended category codes."), call. = F)
+		warning(glue("Repair: converted FALSE/TRUE to categorical codes 0/1 for {n_vars(bad, 'multiple-response')}: {show_names(bad)}. Verify that 0/1 are the intended category codes."), call. = F)
 	}
 
 
@@ -354,7 +355,7 @@ DS$set("private", "check_state", \(repair = F) {
 	bad = mr_vars[vapply(self$data[mr_vars], \(var) any(vapply(var, is.integer, logical(1))), logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Multiple-response variables contain integer elements for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to convert them to doubles."), call. = F)
+		if (!repair) stop(glue("Multiple-response variables contain integer elements for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to convert them to doubles."), call. = F)
 
 		for (var_name in bad) {
 			var = self$data[[var_name]]
@@ -363,7 +364,7 @@ DS$set("private", "check_state", \(repair = F) {
 			self$data[[var_name]] = var
 		}
 
-		message(glue("Repair: converted integer elements to doubles for {length(bad)} multiple-response variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: converted integer elements to doubles for {n_vars(bad, 'multiple-response')}: {show_names(bad)}."))
 	}
 
 
@@ -373,7 +374,7 @@ DS$set("private", "check_state", \(repair = F) {
 	}, logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Multiple-response variables contain NA, NaN, or infinity for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to remove them."), call. = F)
+		if (!repair) stop(glue("Multiple-response variables contain NA, NaN, or infinity for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to remove them."), call. = F)
 
 		for (var_name in bad) {
 			var = self$data[[var_name]]
@@ -381,7 +382,7 @@ DS$set("private", "check_state", \(repair = F) {
 			self$data[[var_name]] = var
 		}
 
-		message(glue("Repair: removed NA, NaN, and infinite codes from {length(bad)} multiple-response variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: removed NA, NaN, and infinite codes from {n_vars(bad, 'multiple-response')}: {show_names(bad)}."))
 	}
 
 
@@ -389,7 +390,7 @@ DS$set("private", "check_state", \(repair = F) {
 	bad = mr_vars[vapply(self$data[mr_vars], \(var) any(vapply(var, \(x) any(abs(x) > 2^53 - 1 | x != trunc(x)), logical(1))), logical(1))]
 
 	if (length(bad) > 0) {
-		stop(glue("Multiple-response variables contain non-integer or out-of-range categorical codes for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}. Codes must be integer-valued doubles within ±(2^53 - 1)."), call. = F)
+		stop(glue("Multiple-response variables contain non-integer or out-of-range categorical codes for {n_vars(bad)}: {show_names(bad)}. Codes must be integer-valued doubles within ±(2^53 - 1)."), call. = F)
 	}
 
 
@@ -399,13 +400,13 @@ DS$set("private", "check_state", \(repair = F) {
 	}, logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Multiple-response variables contain duplicate response codes for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to remove duplicates."), call. = F)
+		if (!repair) stop(glue("Multiple-response variables contain duplicate response codes for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to remove duplicates."), call. = F)
 
 		for (var_name in bad) {
 			self$data[[var_name]] = self$data[[var_name]] |> map(unique)
 		}
 
-		message(glue("Repair: removed duplicate response codes for {length(bad)} multiple-response variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: removed duplicate response codes for {n_vars(bad, 'multiple-response')}: {show_names(bad)}."))
 	}
 
 
@@ -415,13 +416,13 @@ DS$set("private", "check_state", \(repair = F) {
 	}, logical(1))]
 
 	if (length(bad) > 0) {
-		if (!repair) stop(glue("Multiple-response variables contain unsorted response sets for {length(bad)} variable{if (length(bad) != 1) 's'}: {show_names(bad)}; run `$repair()` to sort them."), call. = F)
+		if (!repair) stop(glue("Multiple-response variables contain unsorted response sets for {n_vars(bad)}: {show_names(bad)}; run `$repair()` to sort them."), call. = F)
 
 		for (var_name in bad) {
 			self$data[[var_name]] = self$data[[var_name]] |> map(sort)
 		}
 
-		message(glue("Repair: sorted response sets for {length(bad)} multiple-response variable{if (length(bad) != 1) 's'}: {show_names(bad)}."))
+		message(glue("Repair: sorted response sets for {n_vars(bad, 'multiple-response')}: {show_names(bad)}."))
 	}
 
 
@@ -432,8 +433,8 @@ DS$set("private", "check_state", \(repair = F) {
 		any(!observed %in% self$val_labels[[var_name]])
 	}, logical(1))]
 
-	if (length(bad)) {
-		warning(glue("Incomplete value-label coverage for {length(bad)} categorical variable{if (length(bad) != 1) 's'}: {show_names(bad)}."), call. = F)
+	if (length(bad) > 0) {
+		warning(glue("Incomplete value-label coverage for {n_vars(bad, 'categorical')}: {show_names(bad)}."), call. = F)
 	}
 
 

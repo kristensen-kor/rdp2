@@ -65,7 +65,7 @@ DS$set("public", "get_rds", \(filename) {
 # Initializes an empty dataset or loads an RDS/SPSS file; extensionless paths default to .rds.
 DS$set("public", "initialize", \(filename = NULL, encoding = NULL, haven = F) {
 	if (!is.null(filename)) {
-		assert_nonempty_string(filename)
+		checkmate::assert_string(filename, min.chars = 1)
 
 		if (tools::file_ext(filename) == "") filename = paste0(filename, ".rds")
 
@@ -112,8 +112,7 @@ DS$set("active", "nrow", \() nrow(self$data))
 base = function(...) {
 	prefixes = c(...)
 
-	if (length(prefixes) == 0) stop("At least one variable prefix must be supplied.", call. = F)
-	if (!is.character(prefixes) || anyNA(prefixes) || any(prefixes == "")) stop("Variable prefixes must be non-empty, non-missing character values.", call. = F)
+	checkmate::assert_character(prefixes, min.len = 1, min.chars = 1, any.missing = F)
 
 	# Escapes regular-expression metacharacters in literal strings.
 	prefixes_esc = gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", prefixes)
@@ -137,7 +136,7 @@ DS$set("public", "base_name", \(...) self$names(base(...)))
 
 #' Checks whether a vector uses the rdp2 multiple-response representation.
 #' @export
-is_multiple = \(x) is.list(x) && !is.data.frame(x) && all(vapply(x, is.numeric, logical(1)))
+is_multiple = \(x) is.list(x)
 
 # Determines and returns the type of specified variables in the dataset.
 DS$set("public", "var_type", \(...) {
@@ -221,6 +220,7 @@ DS$set("public", "remove", \(..., .quiet = F) {
 
 # Changes the order of specified variables in the dataset.
 DS$set("public", "move", \(..., after = NULL, before = NULL) {
+	if (!rlang::quo_is_null(rlang::enquo(after)) && !rlang::quo_is_null(rlang::enquo(before))) stop("Only one of `after` and `before` can be supplied.", call. = F)
 	self$data = self$data |> relocate(..., .after = {{ after }}, .before = {{ before }})
 	invisible(NULL)
 })
